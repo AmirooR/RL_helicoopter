@@ -1,6 +1,8 @@
 #include <QtGui>
 #include <QPixmap>
 #include <math.h>
+#include "cops.h"
+#include "copsScene.h"
 
 
 int main(int argc, char **argv)
@@ -8,13 +10,12 @@ int main(int argc, char **argv)
 	QApplication app(argc, argv);
 	qsrand(QTime(0,0,0).secsTo(QTime::currentTime()));
 
-	QGraphicsScene scene;
+	CopsScene scene;
 	scene.setBackgroundBrush(Qt::black);
 	scene.setSceneRect(0, 0, 600, 200);
 	scene.setItemIndexMethod(QGraphicsScene::NoIndex);
 
-	QPixmap const *pic = new QPixmap(":/images/cops.jpg");
-	QGraphicsPixmapItem *helicops = new QGraphicsPixmapItem(*pic, 0, &scene);
+	Cops *helicops = new Cops();
 	helicops->setPos(50, 50);
 	scene.addItem(helicops);
 

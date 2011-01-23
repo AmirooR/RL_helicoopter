@@ -1,5 +1,10 @@
-HEADERS += 
-SOURCES +=	main.cpp 
+HEADERS += \
+	cops.h \
+	copsScene.h
+SOURCES +=	\
+	main.cpp \
+	cops.cpp \
+	copsScene.cpp 
 
 RESOURCES += cops.qrc
 
