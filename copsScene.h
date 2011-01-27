@@ -10,11 +10,22 @@ private:
     enum MouseStateEnum
     {
         CLICKED = 1,
-        RELEASED = 2
+        RELEASED = 2,
+        NONE = 3
     };
     MouseStateEnum mouseState;
+    float dt;
+    float v0;
+    float a_up;
+    float a_down;
+    float v_x;
+    bool lastCrash;
+
+    QGraphicsItem *cops;
+    QGraphicsItem *barrier;
 public:
     CopsScene();
+    void addItem(QGraphicsItem *item);
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event);

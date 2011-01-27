@@ -13,7 +13,7 @@ using namespace std;
 
 Cops::Cops()
 {
-    pic = new QPixmap(":/images/cops.jpg");
+    pic = new QPixmap(":/images/cops2.jpg");
     picSize = pic->size();
 }
 
@@ -33,9 +33,4 @@ QPainterPath Cops::shape() const
 void Cops::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
 {
     painter->drawPixmap(0, 0, *pic);
-}
-
-int Cops::type() const
-{
-    return Type;
 }
