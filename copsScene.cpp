@@ -9,7 +9,6 @@
 
 using namespace std;
 
-//! [0]
 CopsScene::CopsScene()
 {
     startTimer(1000 / 33);
@@ -29,7 +28,7 @@ void CopsScene::timerEvent(QTimerEvent *)
     QList<QGraphicsItem *> graphiItems = this->items();
     foreach (QGraphicsItem *item, graphiItems) 
     {
-        cout << "Item type is: " << item->UserType << endl;
+        cout << "Item type is: " << item->type() << endl;
         if (this->mouseState == CLICKED)
         {
             item->moveBy(0,-2);

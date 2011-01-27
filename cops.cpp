@@ -11,15 +11,14 @@ using namespace std;
 
 
 
-Cops::Cops() 
+Cops::Cops()
 {
-	pic = new QPixmap(":/images/cops.jpg");
-        picSize = pic->size();
+    pic = new QPixmap(":/images/cops.jpg");
+    picSize = pic->size();
 }
 
 QRectF Cops::boundingRect() const
 {
-    qreal adjust = 0.5;
     return QRectF(0, 0,
                   picSize.width(), picSize.height());
 }
@@ -34,4 +33,9 @@ QPainterPath Cops::shape() const
 void Cops::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
 {
     painter->drawPixmap(0, 0, *pic);
+}
+
+int Cops::type() const
+{
+    return Type;
 }

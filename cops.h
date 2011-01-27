@@ -12,19 +12,14 @@ class Cops : public QObject, public QGraphicsItem
     Q_OBJECT
 
 public:
-
-    enum { Type = UserType + 1 };
-
-    int type() const
-    {
-        return Type;
-    }
+    enum { Type = HELICOPS };
 
     Cops();
     QRectF boundingRect() const;
     QPainterPath shape() const;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
                QWidget *widget);
+    int type() const;
 
 protected:
 
