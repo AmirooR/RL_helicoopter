@@ -39,6 +39,7 @@ class Cops : public QObject, public QGraphicsItem
 		qreal mouseEyeDirection;
 		QColor color;
 		QPixmap *pic;
+                  QSize picSize;
 };
 
 #endif

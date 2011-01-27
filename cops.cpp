@@ -27,6 +27,7 @@ Cops::Cops()
       color(qrand() % 256, qrand() % 256, qrand() % 256)
 {
 	pic = new QPixmap(":/images/cops.jpg");
+        picSize = pic->size();
 //   startTimer(1000 / 33);
 }
 //! [0]
@@ -35,8 +36,8 @@ Cops::Cops()
 QRectF Cops::boundingRect() const
 {
     qreal adjust = 0.5;
-    return QRectF(-20 - adjust, -20 - adjust,
-                  36 + adjust, 20 + adjust);
+    return QRectF(0, 0,
+                  picSize.width(), picSize.height());
 }
 //! [1]
 
@@ -44,7 +45,7 @@ QRectF Cops::boundingRect() const
 QPainterPath Cops::shape() const
 {
     QPainterPath path;
-    path.addRect(-10, -20, 20, 40);
+    path.addRect(0, 0, picSize.width(), picSize.height());
     return path;
 }
 //! [2]
@@ -53,8 +54,8 @@ QPainterPath Cops::shape() const
 void Cops::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
 {
     painter->setBrush(Qt::white);
-    painter->drawEllipse(-10, -17, 8, 8);
-    painter->drawEllipse(2, -17, 8, 8);
+    painter->drawEllipse(0, 0, 8, 8);
+    painter->drawEllipse(10, 10, 8, 8);
 	cout << "paint called!" << endl;
 	painter->drawPixmap(0, 0, *pic);
 }
