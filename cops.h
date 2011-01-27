@@ -9,37 +9,28 @@
 //! [0]
 class Cops : public QObject, public QGraphicsItem
 {
-	Q_OBJECT
+    Q_OBJECT
 
-	public:
+public:
 
-		enum { Type = UserType + 1 };
+    enum { Type = UserType + 1 };
 
-		int type() const
-		{
-			// Enable the use of qgraphicsitem_cast with this item.
-			return Type;
-		}
+    int type() const
+    {
+        return Type;
+    }
 
+    Cops();
+    QRectF boundingRect() const;
+    QPainterPath shape() const;
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
+               QWidget *widget);
 
-		Cops();
+protected:
 
-		QRectF boundingRect() const;
-		QPainterPath shape() const;
-		void paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
-				QWidget *widget);
-
-	protected:
-		void timerEvent(QTimerEvent *event);
-		void mousePressEvent(QGraphicsSceneMouseEvent *event);
-
-	private:
-		qreal angle;
-		qreal speed;
-		qreal mouseEyeDirection;
-		QColor color;
-		QPixmap *pic;
-                  QSize picSize;
+private:
+    QPixmap *pic;
+    QSize picSize;
 };
 
 #endif

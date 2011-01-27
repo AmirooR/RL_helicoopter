@@ -6,23 +6,21 @@
 //! [0]
 class CopsScene :  public QGraphicsScene
 {
-	private:
-		enum MouseStateEnum
-						{	
-							CLICKED = 1,
-							RELEASED = 2
-						};
-		MouseStateEnum mouseState;
+private:
+    enum MouseStateEnum
+    {
+        CLICKED = 1,
+        RELEASED = 2
+    };
+    MouseStateEnum mouseState;
 public:
     CopsScene();
 
 protected:
-	void mousePressEvent(QGraphicsSceneMouseEvent *event);
-	void timerEvent(QTimerEvent *);
-	void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
-
+    void mousePressEvent(QGraphicsSceneMouseEvent *event);
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
+    void timerEvent(QTimerEvent *);
 };
-//! [0]
 
 #endif
 
