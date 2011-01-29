@@ -1,12 +1,15 @@
 HEADERS += \
 	cops.h \
 	copsScene.h \
-    barrier.h
+    barrier.h \
+    state.h
 SOURCES +=	\
 	main.cpp \
 	cops.cpp \
 	copsScene.cpp \ 
-    barrier.cpp
+    barrier.cpp \
+    utility.cpp \
+    state.cpp
 
 RESOURCES += cops.qrc
 

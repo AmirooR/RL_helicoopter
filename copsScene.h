@@ -26,6 +26,7 @@ private:
 public:
     CopsScene();
     void addItem(QGraphicsItem *item);
+    void generateEpisode();
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event);

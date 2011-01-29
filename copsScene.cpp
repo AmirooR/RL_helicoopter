@@ -13,9 +13,9 @@ using namespace std;
 CopsScene::CopsScene()
 {
     v0 = 0;
-    v_x = -6;
-    a_up = -0.6;
-    a_down = .3;
+    v_x = -12;
+    a_up = -500;
+    a_down = 350;
     dt = 1000 / 33;
     mouseState = NONE;
     lastCrash = false;
@@ -49,12 +49,12 @@ void CopsScene::timerEvent(QTimerEvent *)
     QPointF currentPos = cops->pos();
     if (this->mouseState == CLICKED)
     {
-        dy = v0 * dt + 0.5 * a_up * (dt/1000) * (dt/1000);
+        dy = v0 * dt/1000 + 0.5 * a_up * (dt/1000) * (dt/1000);
         v0 = v0 + a_up * dt / 1000;
     }
     if (this->mouseState == RELEASED)
     {
-        dy = v0 * dt + 0.5 * a_down * (dt/1000) * (dt/1000);
+        dy = v0 * dt/1000 + 0.5 * a_down * (dt/1000) * (dt/1000);
         v0 = v0 + a_down * dt / 1000;
     }
 
@@ -89,3 +89,4 @@ void CopsScene::timerEvent(QTimerEvent *)
         }
     }
 }
+
