@@ -6,6 +6,8 @@
 #include <QList>
 #include <QGraphicsItem>
 
+#include <octave/oct.h>
+
 #include <iostream>
 
 using namespace std;
@@ -88,5 +90,13 @@ void CopsScene::timerEvent(QTimerEvent *)
             lastCrash = true;
         }
     }
+
+    ColumnVector vec1 = ColumnVector(2);
+    vec1(1) = 123;
+    vec1(0) = 534;
+    ColumnVector vec2 = ColumnVector(2);
+    vec2(0) = 123;
+    vec2(1) = 534;
+    cout << vec1 - vec2 << endl;
 }
 
