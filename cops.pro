@@ -4,7 +4,8 @@ HEADERS += \
     barrier.h \
     episodeelement.h \
     state.h \
-    cluster.h
+    cluster.h \
+    montecarlo.h
 SOURCES +=	\
 	main.cpp \
 	cops.cpp \
@@ -12,7 +13,8 @@ SOURCES +=	\
     barrier.cpp \
     episodeelement.cpp \
     state.cpp \
-    cluster.cpp
+    cluster.cpp \
+    montecarlo.cpp
 
 RESOURCES += cops.qrc
 
