@@ -13,6 +13,7 @@ public:
     MonteCarlo();
     MonteCarlo(ColumnVector tr);
     computeQ(State *state, bool action);
+
     saveClusters();
     loadClusters();
     clustring(vector<EpisodeElement> &episode); // it's me!
