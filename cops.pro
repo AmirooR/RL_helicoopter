@@ -5,7 +5,8 @@ HEADERS += \
     episodeelement.h \
     state.h \
     cluster.h \
-    montecarlo.h
+    montecarlo.h \
+    util.h
 SOURCES +=	\
 	main.cpp \
 	cops.cpp \

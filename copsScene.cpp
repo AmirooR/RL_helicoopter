@@ -1,7 +1,7 @@
 #include "copsScene.h"
 #include "cops.h"
 #include "barrier.h"
-
+#include "util.h"
 #include <QGraphicsScene>
 #include <QList>
 #include <QGraphicsItem>
@@ -90,13 +90,5 @@ void CopsScene::timerEvent(QTimerEvent *)
             lastCrash = true;
         }
     }
-
-    ColumnVector vec1 = ColumnVector(2);
-    vec1(1) = 123;
-    vec1(0) = 534;
-    ColumnVector vec2 = ColumnVector(2);
-    vec2(0) = 123;
-    vec2(1) = 534;
-    cout << vec1 - vec2 << endl;
 }
 

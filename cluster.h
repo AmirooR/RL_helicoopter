@@ -16,7 +16,7 @@ public:
     void setSigma(ColumnVector);
     void setAlpha(ColumnVector);
 
-    bool isInCluster(ColumnVector tr, ColumnVector state);  // TODO: performance killer! (global tr)
+    bool isInCluster(ColumnVector &tr, ColumnVector &state);  // TODO: performance killer! (global tr)
     ColumnVector distance(ColumnVector point);   // calc distance of point from current cluster, return abs
 
 private:

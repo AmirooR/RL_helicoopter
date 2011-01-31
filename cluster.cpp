@@ -1,4 +1,5 @@
 #include "cluster.h"
+#include "util.h"
 
 using namespace std;
 
@@ -48,4 +49,33 @@ void Cluster::setSigma(ColumnVector sigma)
 void Cluster::setAlpha(ColumnVector alpha)
 {
     this->alpha = alpha;
+}
+
+ColumnVector Cluster::distance(ColumnVector point)
+{
+    if (point.dim1() != this->mu.dim1())
+    {
+        TRACE << "size mismatch" << endl;
+        return point;
+    }
+
+    ColumnVector retColumn = point - this->mu;
+    for (int i = 0; i < point.dim1(); i++)
+    {
+        retColumn(i) = abs(retColumn(i));
+    }
+    return retColumn;
+}
+
+bool Cluster::isInCluster(ColumnVector &tr, ColumnVector &state)
+{
+    ColumnVector dist = distance(state);
+    for (int i = 0; i < tr.dim1(); i++)
+    {
+        if (dist(i) > tr(i))
+        {
+            return false;
+        }
+    }
+    return true;
 }
