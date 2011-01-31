@@ -28,7 +28,7 @@ private:
     int maxNumOfClusters;
     ColumnVector threshold;
 
-    float[] calcGrad(float fval,EpisodeElement e,int Returns,Cluster c);
+    float* calcGrad(float fval,EpisodeElement e,int Returns,Cluster c);
 
     int ignoreThreshold;        // age fasele ye state bishtar az inbarabare thereshold bood, update nakon
     float rhoAlpha;

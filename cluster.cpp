@@ -17,41 +17,35 @@ Cluster::Cluster(ColumnVector mu)
     TRACE << "new cluster created! mu = " << mu.transpose() << endl;
 }
 
-Cluster::Cluster(ColumnVector mu, ColumnVector sigma, ColumnVector alpha, ColumnVector sigmaDown, ColumnVector alphaDown)
-{
-    if (mu.dim1() == sigma.dim1() && alpha.dim1() == mu.dim1())
-    {
-        this->mu = mu;
-        this->sigmaUp = sigma;
-        this->alphaUp = alpha;
-        this->sigmaDown = sigmaDown;
-        this->alphaDown = alphaDown;
-    }
-    else
-    {
-        cerr << "size mismatch" << endl;
-    }
+Cluster::Cluster(ColumnVector mu, float sigma, float alpha, float sigmaDown, float alphaDown)
+{    
+    this->mu = mu;
+    this->sigmaUp = sigma;
+    this->alphaUp = alpha;
+    this->sigmaDown = sigmaDown;
+    this->alphaDown = alphaDown;
+
 }
 
 ColumnVector Cluster::getMu()
 {
     return this->mu;
 }
-ColumnVector Cluster::getSigmaUp()
+float Cluster::getSigmaUp()
 {
     return this->sigmaUp;
 }
 
-ColumnVector Cluster::getAlphaUp()
+float Cluster::getAlphaUp()
 {
     return this->alphaUp;
 }
-ColumnVector Cluster::getSigmaDown()
+float Cluster::getSigmaDown()
 {
     return this->sigmaDown;
 }
 
-ColumnVector Cluster::getAlphaDown()
+float Cluster::getAlphaDown()
 {
     return this->alphaDown;
 }
@@ -61,21 +55,21 @@ void Cluster::setMu(ColumnVector mu)
     this->mu = mu;
 }
 
-void Cluster::setSigmaUp(ColumnVector sigma)
+void Cluster::setSigmaUp(float sigma)
 {
     this->sigmaUp = sigma;
 }
 
-void Cluster::setAlphaUp(ColumnVector alpha)
+void Cluster::setAlphaUp(float alpha)
 {
     this->alphaUp = alpha;
 }
-void Cluster::setSigmaDown(ColumnVector sigma)
+void Cluster::setSigmaDown(float sigma)
 {
     this->sigmaDown = sigma;
 }
 
-void Cluster::setAlphaDown(ColumnVector alpha)
+void Cluster::setAlphaDown(float alpha)
 {
     this->alphaDown = alpha;
 }
@@ -99,7 +93,7 @@ ColumnVector Cluster::distance(ColumnVector point)
 bool Cluster::isInCluster(ColumnVector &tr, ColumnVector &state)
 {
     ColumnVector dist = distance(state);
-   // TRACE << "dist: " << dist.transpose() << " tr: " << tr.transpose() << endl;
+    // TRACE << "dist: " << dist.transpose() << " tr: " << tr.transpose() << endl;
     for (int i = 0; i < tr.dim1(); i++)
     {
         if (dist(i) > tr(i))

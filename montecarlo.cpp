@@ -101,17 +101,19 @@ vector<EpisodeElement> & generateDummyEpisode(int episodeLen)
  * first element of return value is grad(J)/alpha
  * second element fo return value is grad(J)/sigma2
  */
-float[] MonteCarlo::calcGrad(float fval,EpisodeElement e,int Returns,Cluster c)
+float* MonteCarlo::calcGrad(float fval,EpisodeElement e,int Returns,Cluster c)
 {
-    float grads[2];
+    float* grads = new float(2);
     ColumnVector s_mu = e.getState()->toColumnVector()-c.getMu();
     RowVector s_mu_transpose = s_mu.transpose();
-    float sigma2 = c.getSigma(1); //NOTE: sigma2 is stored in clusters!
-    float s_mu_sig = (s_mu_transpose * s_mu)/(2*sigma2); //TODO: correct for each action
+
+    float sigma2 = e.getAction() ? c.getSigmaUp() : c.getSigmaDown(); //NOTE: sigma2 is stored in clusters!
+    float s_mu_sig = (s_mu_transpose * s_mu) / (2 * sigma2);
     float namaE = expf(-s_mu_sig);
     float delta = Returns - fval;
-    grads[0] = -2.0*namaE*delta;
-    grads[1] = -2.0*c.getAlpha()*(delta)*s_mu_sig*nameE/sigma2;
+    grads[0] = -2.0 * namaE * delta;
+    float alpha = e.getAction() ? c.getAlphaUp() : c.getAlphaDown();
+    grads[1] = -2.0 * alpha * (delta) * s_mu_sig * namaE / sigma2;
     return grads;
 }
 
@@ -134,11 +136,23 @@ void MonteCarlo::updateClusters(vector<EpisodeElement> &episode)
         for(j=0;j<clusterList.size();j++)
         {
             Cluster c = clusterList[j];
-            if(c.distance(e.getState()->toColumnVector()) < ignoreThreshold * threshold) //TODO: works?
+            bool ignore = false;
+            ColumnVector vec = c.distance(e.getState()->toColumnVector()) - threshold * ignoreThreshold;
+            for(int k=0;k<threshold.dim1();k++)
             {
-                float grads[] = calcGrad(qvalues[i],e,Returns,c);
-                c.setAlpha(c.getAlpha()-(this->rhoAlpha)*grads[0]);
-                c.setSigma(c.getSigma()-(this->rhoSigma*grads[1]));     //TODO: sigma should be a scalar instead of vector
+                if(vec(k)>=0)
+                {
+                    ignore = true;
+                    break;
+                }
+            }
+            if(!ignore) //TODO: works?
+            {
+                //float *grads = new float(2);
+                float* grads = calcGrad(qvalues[i],e,Returns,c);
+                e.getAction() ? c.setAlphaUp(c.getAlphaUp()-(this->rhoAlpha)*grads[0]) : c.setAlphaDown(c.getAlphaDown()-(this->rhoAlpha)*grads[0]);
+                e.getAction() ? c.setSigmaUp(c.getSigmaUp()-(this->rhoSigma)*grads[1]) : c.setSigmaDown(c.getSigmaDown()-(this->rhoSigma)*grads[1]);
+                delete grads;
             }
         }
         Returns -= e.getReward();
@@ -151,13 +165,27 @@ float MonteCarlo::computeQ(State *state, bool action)
     for(int i=0;i<clusterList.size();i++)
     {
         Cluster c= clusterList[i];
-        //TODO: if(distance>thresh) ?
-        ColumnVector s_mu = state->toColumnVector()-c.getMu();
-        RowVector s_mu_transpose = s_mu.transpose();
-        float sigma2 = c.getSigma(1); //NOTE: sigma2 is stored in clusters!
-        float s_mu_sig = (s_mu_transpose * s_mu)/(2*sigma2); //TODO: correct for each action
-        float namaE = expf(-s_mu_sig);
-        val += c.getAlpha()*namaE;
+        bool ignore = false;
+        ColumnVector vec = c.distance(state->toColumnVector()) - threshold * ignoreThreshold;
+        for(int k=0;k<threshold.dim1();k++)
+        {
+            if(vec(k)>=0)
+            {
+                ignore = true;
+                break;
+            }
+        }
+
+        if(!ignore)
+        {
+            ColumnVector s_mu = state->toColumnVector()-c.getMu();
+            RowVector s_mu_transpose = s_mu.transpose();
+            float sigma2 = action ? c.getSigmaUp() : c.getSigmaDown();
+            float s_mu_sig = (s_mu_transpose * s_mu)/(2*sigma2);
+            float namaE = expf(-s_mu_sig);
+            float alpha = action?c.getAlphaUp() : c.getAlphaDown();
+            val += alpha*namaE;
+        }
     }
     return val;
 }
