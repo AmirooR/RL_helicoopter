@@ -1,6 +1,7 @@
 #include <QtGui>
 #include <QPixmap>
 #include <math.h>
+#include <time.h>
 #include "cops.h"
 #include "copsScene.h"
 #include "barrier.h"
@@ -10,6 +11,7 @@ int main(int argc, char **argv)
 {
 	QApplication app(argc, argv);
 	qsrand(QTime(0,0,0).secsTo(QTime::currentTime()));
+        srand(time(0));
 
         int screenWidth = 600;
         int screenHeight = 300;

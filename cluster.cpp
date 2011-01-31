@@ -5,15 +5,27 @@ using namespace std;
 
 Cluster::Cluster()
 {
+    for (int i = 0; i < mu.dim1(); i++)
+    {
+        mu(i) = 1;
+    }
 }
 
-Cluster::Cluster(ColumnVector mu, ColumnVector sigma, ColumnVector alpha)
+Cluster::Cluster(ColumnVector mu)
+{
+    this->mu = mu;
+    TRACE << "new cluster created! mu = " << mu.transpose() << endl;
+}
+
+Cluster::Cluster(ColumnVector mu, ColumnVector sigma, ColumnVector alpha, ColumnVector sigmaDown, ColumnVector alphaDown)
 {
     if (mu.dim1() == sigma.dim1() && alpha.dim1() == mu.dim1())
     {
         this->mu = mu;
-        this->sigma = sigma;
-        this->alpha = alpha;
+        this->sigmaUp = sigma;
+        this->alphaUp = alpha;
+        this->sigmaDown = sigmaDown;
+        this->alphaDown = alphaDown;
     }
     else
     {
@@ -25,15 +37,23 @@ ColumnVector Cluster::getMu()
 {
     return this->mu;
 }
-
-ColumnVector Cluster::getSigma()
+ColumnVector Cluster::getSigmaUp()
 {
-    return this->sigma;
+    return this->sigmaUp;
 }
 
-ColumnVector Cluster::getAlpha()
+ColumnVector Cluster::getAlphaUp()
 {
-    return this->alpha;
+    return this->alphaUp;
+}
+ColumnVector Cluster::getSigmaDown()
+{
+    return this->sigmaDown;
+}
+
+ColumnVector Cluster::getAlphaDown()
+{
+    return this->alphaDown;
 }
 
 void Cluster::setMu(ColumnVector mu)
@@ -41,14 +61,23 @@ void Cluster::setMu(ColumnVector mu)
     this->mu = mu;
 }
 
-void Cluster::setSigma(ColumnVector sigma)
+void Cluster::setSigmaUp(ColumnVector sigma)
 {
-    this->sigma = sigma;
+    this->sigmaUp = sigma;
 }
 
-void Cluster::setAlpha(ColumnVector alpha)
+void Cluster::setAlphaUp(ColumnVector alpha)
 {
-    this->alpha = alpha;
+    this->alphaUp = alpha;
+}
+void Cluster::setSigmaDown(ColumnVector sigma)
+{
+    this->sigmaDown = sigma;
+}
+
+void Cluster::setAlphaDown(ColumnVector alpha)
+{
+    this->alphaDown = alpha;
 }
 
 ColumnVector Cluster::distance(ColumnVector point)
@@ -70,6 +99,7 @@ ColumnVector Cluster::distance(ColumnVector point)
 bool Cluster::isInCluster(ColumnVector &tr, ColumnVector &state)
 {
     ColumnVector dist = distance(state);
+   // TRACE << "dist: " << dist.transpose() << " tr: " << tr.transpose() << endl;
     for (int i = 0; i < tr.dim1(); i++)
     {
         if (dist(i) > tr(i))

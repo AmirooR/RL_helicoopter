@@ -2,9 +2,12 @@
 #include "cops.h"
 #include "barrier.h"
 #include "util.h"
+#include "episodeelement.h"
+
 #include <QGraphicsScene>
 #include <QList>
 #include <QGraphicsItem>
+#include <QPointF>
 
 #include <octave/oct.h>
 
@@ -21,6 +24,20 @@ CopsScene::CopsScene()
     dt = 1000 / 33;
     mouseState = NONE;
     lastCrash = false;
+    // TODO
+    ColumnVector tr(7); //TODO: didi bug dasht inja goozoo!?
+    tr(State::VX) = -v_x / 3.0;
+    tr(State::VY) = 1050 / 3.0;
+    tr(State::DIST_UP) = 300 / 4.0;
+    tr(State::DIST_DOWN) = 300 / 4.0;
+    tr(State::DIST_BARRIER) = 550 / 3.0;
+    tr(State::BARRIER_UP) = 200 / 4.0;
+    tr(State::BARRIER_DOWN) = 200 / 4.0;
+    //tr = tr / 3.0;
+    monteCarlo.setThreshold(tr);
+    cout<<"CopsScene"<<endl;
+    episode = new vector<EpisodeElement>();
+    episode->reserve(200);
     startTimer(dt);
 }
 void CopsScene::mousePressEvent(QGraphicsSceneMouseEvent *event)
@@ -47,6 +64,7 @@ void CopsScene::addItem(QGraphicsItem *item)
 
 void CopsScene::timerEvent(QTimerEvent *)
 {
+    static int clusterMe = 0;
     float dy = 0;
     QPointF currentPos = cops->pos();
     if (this->mouseState == CLICKED)
@@ -90,5 +108,28 @@ void CopsScene::timerEvent(QTimerEvent *)
             lastCrash = true;
         }
     }
+    clusterMe++;
+    //vector<EpisodeElement> *
+    if (clusterMe % 100 == 0)
+    {
+        cout << "New Round!" << endl;
+        monteCarlo.clustring(*episode); //TODO: check? not used pointers
+        cout << "Number of Clusters: " << monteCarlo.getClusterList().size() << endl;
+        episode->empty();
+        episode->reserve(100);
+    }
+
+
+    State *state = new State(v_x, v0, cops->pos().y(), this->height() - cops->pos().y(),
+                             barrier->pos().x() - cops->pos().x(),
+                             barrier->pos().y(),
+                             this->height() - barrier->pos().y());
+    //TRACE << "Barrier: " << barrier->mapToParent(barrier->boundingRect()).boundingRect().top() <<", " << barrier->pos().y() << endl;
+
+
+    // TRACE << "State: " << *state << endl;
+    bool action = this->mouseState == CLICKED ? true : false;
+    EpisodeElement ep(state, action, 1); //TODO: check? not used pointers
+    episode->push_back(ep);
 }
 

@@ -1,6 +1,7 @@
 #ifndef COPS_SCENE_H
 #define COPS_SCENE_H
 
+#include "montecarlo.h"
 #include <QGraphicsScene>
 
 //! [0]
@@ -23,6 +24,8 @@ private:
 
     QGraphicsItem *cops;
     QGraphicsItem *barrier;
+    MonteCarlo monteCarlo;
+    vector<EpisodeElement> *episode;
 public:
     CopsScene();
     void addItem(QGraphicsItem *item);
