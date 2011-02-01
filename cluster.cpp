@@ -5,29 +5,41 @@ using namespace std;
 
 Cluster::Cluster()
 {
-    for (int i = 0; i < mu.dim1(); i++)
+    mu = new ColumnVector;
+    mu->resize(7);
+    for (int i = 0; i < mu->dim1(); i++)
     {
-        mu(i) = 1;
+        (*mu)(i) = 1;
     }
+    this->alphaDown = 1;
+    this->alphaUp = 1;
+    this->sigmaDown = 1;
+    this->sigmaUp = 1;
 }
 
-Cluster::Cluster(ColumnVector mu)
+Cluster::Cluster(ColumnVector *mu)
 {
+    TRACE << mu->dim1() << endl;
     this->mu = mu;
- //   TRACE << "new cluster created! mu = " << mu.transpose() << endl;
+    this->alphaDown = 1;
+    this->alphaUp = 1;
+    this->sigmaDown = 1;
+    this->sigmaUp = 1;
+
+    //   TRACE << "new cluster created! mu = " << mu.transpose() << endl;
 }
 
-Cluster::Cluster(ColumnVector mu, float sigma, float alpha, float sigmaDown, float alphaDown)
+Cluster::Cluster(ColumnVector *mu, float sigma, float alpha, float sigmaDown, float alphaDown)
 {    
+    TRACE << mu->dim1() << endl;
     this->mu = mu;
     this->sigmaUp = sigma;
     this->alphaUp = alpha;
     this->sigmaDown = sigmaDown;
     this->alphaDown = alphaDown;
-
 }
 
-ColumnVector Cluster::getMu()
+ColumnVector* Cluster::getMu()
 {
     return this->mu;
 }
@@ -50,7 +62,7 @@ float Cluster::getAlphaDown()
     return this->alphaDown;
 }
 
-void Cluster::setMu(ColumnVector mu)
+void Cluster::setMu(ColumnVector *mu)
 {
     this->mu = mu;
 }
@@ -74,15 +86,32 @@ void Cluster::setAlphaDown(float alpha)
     this->alphaDown = alpha;
 }
 
+void Cluster::save(FILE* fp)
+{
+#ifdef AMIR
+    fwrite(this->mu,sizeof(ColumnVector),1,fp);
+#else
+    for(int i=0;i < mu->dim1();i++)
+    {
+        float x = (*mu)(i);
+        fwrite(&x,sizeof(float),1,fp);
+    }
+#endif
+    fwrite(&sigmaUp,sizeof(float),1,fp);
+    fwrite(&alphaUp,sizeof(float),1,fp);
+    fwrite(&sigmaDown,sizeof(float),1,fp);
+    fwrite(&alphaDown,sizeof(float),1,fp);
+}
+
 ColumnVector Cluster::distance(ColumnVector point)
 {
-    if (point.dim1() != this->mu.dim1())
+    if (point.dim1() != this->mu->dim1())
     {
-        TRACE << "size mismatch" << endl;
+        TRACE << "size mismatch: point:" << point.dim1() << "muDim:" << mu->dim1() << endl;
         return point;
     }
 
-    ColumnVector retColumn = point - this->mu;
+    ColumnVector retColumn = point - *(this->mu);
     for (int i = 0; i < point.dim1(); i++)
     {
         retColumn(i) = abs(retColumn(i));

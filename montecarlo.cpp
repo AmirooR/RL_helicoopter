@@ -2,7 +2,7 @@
 #include "util.h"
 
 MonteCarlo::MonteCarlo()
-    :maxNumOfClusters(150)
+    :maxNumOfClusters(50)
 {
 }
 
@@ -16,12 +16,93 @@ vector<Cluster> MonteCarlo::getClusterList()
     return clusterList;
 }
 
+void MonteCarlo::saveClusters()
+{
+    TRACE<<"saving clusters..."<<endl;
+    //TODO: name of file
+    FILE* fp = fopen("CLUSTERS.dat","wb");
+    int size = clusterList.size();
+    fwrite(&size,sizeof(int),1,fp);
+    Cluster c2 = clusterList[0];
+    int dim = c2.getMu()->dim1();
+    fwrite(&dim,sizeof(int),1,fp);
+    for(int i=0;i<size;i++)
+    {
+        Cluster c = clusterList[i];
+        c.save(fp);
+    }
+    fclose(fp);
+}
+
+void MonteCarlo::loadClusters()
+{
+    cerr<<"loading clusters!.."<<endl;
+    FILE* fp = fopen("CLUSTERS.dat","rb");
+    int size;
+    fread(&size,sizeof(int),1,fp);
+    int dims;
+    fread(&dims,sizeof(int),1,fp);
+    cerr<<"size is "<<size<<endl;
+    cerr<<"size is "<<size<<endl;
+    for(int i=0;i<size;i++)
+    {
+        Cluster c = loadSingleCluster(fp, dims);
+        try
+        {
+            clusterList.push_back(c);
+        }
+        catch(exception e)
+        {
+            TRACE << e.what() << endl;
+        }
+    }
+    TRACE<<size<<" clusters loaded"<<endl;
+    fclose(fp);
+}
+
+Cluster MonteCarlo::loadSingleCluster(FILE* fp, int dim)
+{
+#ifdef AMIR
+    cerr<<"Amir deffed!"<<endl;
+    ColumnVector* mean = new ColumnVector(1);
+    fread(mean,sizeof(ColumnVector),1,fp);
+#else
+    cerr<<"ALI!"<<endl;
+    ColumnVector *mean = new ColumnVector();
+    mean->resize(7);
+    for(int i=0;i<dim;i++)
+    {
+        float x;
+        fread(&x,sizeof(float),1,fp);
+        (*mean)(i) = x;
+    }
+#endif
+    float sigUp,sigDown,aUp,aDown;
+    fread(&sigUp,sizeof(float),1,fp);
+    fread(&aUp,sizeof(float),1,fp);
+    fread(&sigDown,sizeof(float),1,fp);
+    fread(&aDown,sizeof(float),1,fp);
+    Cluster c;
+    c.setAlphaDown(aDown);
+    c.setAlphaUp(aUp);
+    c.setSigmaDown(sigDown);
+    c.setSigmaUp(sigUp);
+    c.setMu(mean);
+    TRACE << mean->transpose() << endl;
+    return c;
+}
+
+int MonteCarlo::getMaxNumOfClusters()
+{
+    return maxNumOfClusters;
+}
+
 bool MonteCarlo::actionSelection(State *state, float *retQ)
 {
     static float eps = 0.2;
     float clickQ = this->computeQ(state, true);
     float releasedQ = this->computeQ(state, false);
-    float rnd = rand() / RAND_MAX;
+    float rnd = rand() / float(RAND_MAX);
     if (rnd < eps)
     {
         // min
@@ -74,15 +155,16 @@ void MonteCarlo::clustring(vector<EpisodeElement> &episode)
         // no match cluster, create new cluster
         if (!isInAnyCluster && clusterList.size() < maxNumOfClusters)
         {
-            ColumnVector newMu;
+            ColumnVector *newMu = new ColumnVector();
+            newMu->resize(7);
             if (episodeItr->getAction() == true)
             {
-                newMu = *stateColumnVector + newClusterTrUp / 2;
+                *newMu = *stateColumnVector + newClusterTrUp / 2;
                 // TRACE << "state " << stateColumnVector->transpose() << endl;
             }
             else
             {
-                newMu = *stateColumnVector + newClusterTrDown / 2;
+                *newMu = *stateColumnVector + newClusterTrDown / 2;
                 // TRACE << "state " << stateColumnVector->transpose() << endl;
             }
             Cluster newCluster(newMu);
@@ -135,6 +217,7 @@ vector<EpisodeElement>* MonteCarlo::episodeGenerator(int episodeLen)
 
     for(int i = 1; i < episodeLen; i++)
     {
+        TRACE << "action: " << action << endl;
         int reward = 1;
         if (action)
         {
@@ -192,7 +275,7 @@ vector<EpisodeElement>* MonteCarlo::episodeGenerator(int episodeLen)
 float* MonteCarlo::calcGrad(float fval,EpisodeElement e,int Returns,Cluster c)
 {
     float* grads = new float(2);
-    ColumnVector s_mu = e.getState()->toColumnVector()-c.getMu();
+    ColumnVector s_mu = e.getState()->toColumnVector() - *(c.getMu());
     RowVector s_mu_transpose = s_mu.transpose();
 
     float sigma2 = e.getAction() ? c.getSigmaUp() : c.getSigmaDown(); //NOTE: sigma2 is stored in clusters!
@@ -266,7 +349,7 @@ float MonteCarlo::computeQ(State *state, bool action)
 
         if(!ignore)
         {
-            ColumnVector s_mu = state->toColumnVector()-c.getMu();
+            ColumnVector s_mu = state->toColumnVector() - *(c.getMu());
             RowVector s_mu_transpose = s_mu.transpose();
             float sigma2 = action ? c.getSigmaUp() : c.getSigmaDown();
             float s_mu_sig = (s_mu_transpose * s_mu)/(2*sigma2);

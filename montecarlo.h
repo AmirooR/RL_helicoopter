@@ -23,6 +23,10 @@ public:
     void updateClusters(vector<EpisodeElement> &episode);
     bool actionSelection(State *state, float *retQ);
     vector<Cluster> getClusterList();
+    vector<EpisodeElement>* episodeGenerator(int episodeLen);
+    int getMaxNumOfClusters();
+    Cluster loadSingleCluster(FILE* fp, int dim);
+
 private:
     vector<Cluster> clusterList;
     int maxNumOfClusters;
@@ -34,7 +38,6 @@ private:
     float rhoAlpha;
     float rhoSigma;
 
-    vector<EpisodeElement>* episodeGenerator(int episodeLen);
 };
 
 #endif // MONTECARLO_H

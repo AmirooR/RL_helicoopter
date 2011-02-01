@@ -15,6 +15,7 @@ private:
         NONE = 3
     };
     MouseStateEnum mouseState;
+    int timerId;
     float dt;
     float v0;
     float a_up;
@@ -26,6 +27,8 @@ private:
     QGraphicsItem *barrier;
     MonteCarlo monteCarlo;
     vector<EpisodeElement> *episode;
+
+    void episodeVisualizer(vector<EpisodeElement> *episode);
 public:
     CopsScene();
     void addItem(QGraphicsItem *item);
@@ -35,6 +38,7 @@ protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event);
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
     void timerEvent(QTimerEvent *);
+    void keyPressEvent(QKeyEvent *event);
 };
 
 #endif

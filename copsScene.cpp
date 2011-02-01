@@ -8,6 +8,7 @@
 #include <QList>
 #include <QGraphicsItem>
 #include <QPointF>
+#include <QKeyEvent>
 
 #include <octave/oct.h>
 
@@ -35,10 +36,11 @@ CopsScene::CopsScene()
     tr(State::BARRIER_DOWN) = 200 / 4.0;
 
     monteCarlo.setThreshold(tr);
+    monteCarlo.loadClusters();
     cout<< "CopsScene" <<endl;
     episode = new vector<EpisodeElement>();
     episode->reserve(200);
-    startTimer(dt);
+    timerId = startTimer(dt);
 }
 void CopsScene::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
@@ -47,6 +49,38 @@ void CopsScene::mousePressEvent(QGraphicsSceneMouseEvent *event)
 void CopsScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
     this->mouseState = RELEASED;
+}
+void CopsScene::keyPressEvent(QKeyEvent *event)
+{
+    static bool toggle = true;
+    if (event->key() == ' ')
+    {
+        if (toggle)
+        {
+            killTimer(timerId);
+        }
+        else
+        {
+            timerId = startTimer(dt);
+        }
+        toggle = !toggle;
+    }
+    if (event->key() == 'S')
+    {
+        this->episodeVisualizer(this->monteCarlo.episodeGenerator(1000));
+    }
+}
+
+void CopsScene::episodeVisualizer(vector<EpisodeElement> *episode)
+{
+    vector<EpisodeElement>::iterator episodeItr = episode->begin();
+    while(episodeItr != episode->end())
+    {
+        cops->setPos(50, episodeItr->getState()->getDistUp());
+        barrier->setPos(50 + episodeItr->getState()->getDistBarrier(), episodeItr->getState()->getBarrierUp());
+        TRACE << cops->pos().y() << endl;
+        episodeItr++;
+    }
 }
 
 void CopsScene::addItem(QGraphicsItem *item)
@@ -64,6 +98,7 @@ void CopsScene::addItem(QGraphicsItem *item)
 
 void CopsScene::timerEvent(QTimerEvent *)
 {
+    static bool clustersSaved = true; //NOTE: make it false for saving
     static int clusterMe = 0;
     float dy = 0;
     QPointF currentPos = cops->pos();
@@ -118,6 +153,11 @@ void CopsScene::timerEvent(QTimerEvent *)
         cout << "Number of Clusters: " << monteCarlo.getClusterList().size() << endl;
         episode->empty();
         episode->reserve(100);
+        if(monteCarlo.getClusterList().size() == monteCarlo.getMaxNumOfClusters() && !clustersSaved)
+        {
+            monteCarlo.saveClusters();
+            clustersSaved = true;
+        }
     }
 
 
@@ -132,9 +172,9 @@ void CopsScene::timerEvent(QTimerEvent *)
                              barrierUp,
                              barrierDown);
 
-//    TRACE << "distUp: " << distUp << " ,distDown: " << distDown << endl;
-//    TRACE << "distBarrier: " << distBarrier << endl;
-//    TRACE << "barrierUp: " << barrierUp << " ,barrierDown: " << barrierDown << endl;
+    //    TRACE << "distUp: " << distUp << " ,distDown: " << distDown << endl;
+    //    TRACE << "distBarrier: " << distBarrier << endl;
+    //    TRACE << "barrierUp: " << barrierUp << " ,barrierDown: " << barrierDown << endl;
     bool action = this->mouseState == CLICKED ? true : false;
     EpisodeElement ep(state, action, 1); //TODO: check? not used pointers
     episode->push_back(ep);
