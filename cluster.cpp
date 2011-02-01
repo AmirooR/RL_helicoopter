@@ -14,7 +14,7 @@ Cluster::Cluster()
 Cluster::Cluster(ColumnVector mu)
 {
     this->mu = mu;
-    TRACE << "new cluster created! mu = " << mu.transpose() << endl;
+ //   TRACE << "new cluster created! mu = " << mu.transpose() << endl;
 }
 
 Cluster::Cluster(ColumnVector mu, float sigma, float alpha, float sigmaDown, float alphaDown)

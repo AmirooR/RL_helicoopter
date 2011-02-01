@@ -21,7 +21,7 @@ public:
     void loadClusters();
     void clustring(vector<EpisodeElement> &episode); // it's me!
     void updateClusters(vector<EpisodeElement> &episode);
-    bool actionSelection();
+    bool actionSelection(State *state, float *retQ);
     vector<Cluster> getClusterList();
 private:
     vector<Cluster> clusterList;
@@ -34,7 +34,7 @@ private:
     float rhoAlpha;
     float rhoSigma;
 
-    vector<EpisodeElement>& generateDummyEpisode();
+    vector<EpisodeElement>* episodeGenerator(int episodeLen);
 };
 
 #endif // MONTECARLO_H

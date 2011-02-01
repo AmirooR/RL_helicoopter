@@ -24,8 +24,8 @@ CopsScene::CopsScene()
     dt = 1000 / 33;
     mouseState = NONE;
     lastCrash = false;
-    // TODO
-    ColumnVector tr(7); //TODO: didi bug dasht inja goozoo!?
+
+    ColumnVector tr(7);
     tr(State::VX) = -v_x / 3.0;
     tr(State::VY) = 1050 / 3.0;
     tr(State::DIST_UP) = 300 / 4.0;
@@ -33,9 +33,9 @@ CopsScene::CopsScene()
     tr(State::DIST_BARRIER) = 550 / 3.0;
     tr(State::BARRIER_UP) = 200 / 4.0;
     tr(State::BARRIER_DOWN) = 200 / 4.0;
-    //tr = tr / 3.0;
+
     monteCarlo.setThreshold(tr);
-    cout<<"CopsScene"<<endl;
+    cout<< "CopsScene" <<endl;
     episode = new vector<EpisodeElement>();
     episode->reserve(200);
     startTimer(dt);
@@ -105,6 +105,7 @@ void CopsScene::timerEvent(QTimerEvent *)
         if (collideItem->type() == HELICOPS && !lastCrash)
         {
             cout << "Crashed!" << endl;
+            TRACE << barrier->pos().x() << "," << cops->pos().x() + cops->boundingRect().width() << endl;
             lastCrash = true;
         }
     }
@@ -120,14 +121,20 @@ void CopsScene::timerEvent(QTimerEvent *)
     }
 
 
-    State *state = new State(v_x, v0, cops->pos().y(), this->height() - cops->pos().y(),
-                             barrier->pos().x() - cops->pos().x(),
-                             barrier->pos().y(),
-                             this->height() - barrier->pos().y());
-    //TRACE << "Barrier: " << barrier->mapToParent(barrier->boundingRect()).boundingRect().top() <<", " << barrier->pos().y() << endl;
+    float distUp = cops->pos().y();
+    float distDown = this->height() - cops->pos().y();
+    float distBarrier = barrier->pos().x() - cops->pos().x();
+    float barrierUp = barrier->pos().y();
+    float barrierDown = this->height() - barrier->pos().y();
 
+    State *state = new State(v_x, v0, distUp, distDown,
+                             distBarrier,
+                             barrierUp,
+                             barrierDown);
 
-    // TRACE << "State: " << *state << endl;
+//    TRACE << "distUp: " << distUp << " ,distDown: " << distDown << endl;
+//    TRACE << "distBarrier: " << distBarrier << endl;
+//    TRACE << "barrierUp: " << barrierUp << " ,barrierDown: " << barrierDown << endl;
     bool action = this->mouseState == CLICKED ? true : false;
     EpisodeElement ep(state, action, 1); //TODO: check? not used pointers
     episode->push_back(ep);

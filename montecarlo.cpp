@@ -16,6 +16,32 @@ vector<Cluster> MonteCarlo::getClusterList()
     return clusterList;
 }
 
+bool MonteCarlo::actionSelection(State *state, float *retQ)
+{
+    static float eps = 0.2;
+    float clickQ = this->computeQ(state, true);
+    float releasedQ = this->computeQ(state, false);
+    float rnd = rand() / RAND_MAX;
+    if (rnd < eps)
+    {
+        // min
+        *retQ = min(clickQ, releasedQ);
+    }
+    else
+    {
+        // max
+        *retQ = max(clickQ, releasedQ);
+
+    }
+
+    eps -= 0.001;
+    if (*retQ == clickQ)
+    {
+        return true;
+    }
+    return false;
+}
+
 void MonteCarlo::clustring(vector<EpisodeElement> &episode)
 {
     if (clusterList.size() >= maxNumOfClusters)
@@ -71,29 +97,91 @@ void MonteCarlo::clustring(vector<EpisodeElement> &episode)
 }
 
 
-vector<EpisodeElement> & generateDummyEpisode(int episodeLen)
+vector<EpisodeElement>* MonteCarlo::episodeGenerator(int episodeLen)
 {
     // env parameters
-    float v0 = 0;
-    float v_x = -12;
     float a_up = -500;
     float a_down = 350;
     float dt = 1000 / 33;
 
+    // state vars
+    float vX;
+    float vY;
+    float distUp;
+    float distDown;
+    float distBarrier;
+    float barrierUp;
+    float barrierDown;
+
+    vX = -12;
+    vY = 0;
+    distUp = 50;
+    distDown = 250;
+    distBarrier = 550;
+    barrierUp = 168;
+    barrierDown = 132;
+    float dy;
+
     vector<EpisodeElement> *retEpisode = new vector<EpisodeElement>();
     retEpisode->reserve(episodeLen);
 
-    State *startState = new State(v_x, v0, 50, 250, 500, 50, 60);
-    EpisodeElement *episodeElement = new EpisodeElement(startState, 0, 1);
-    retEpisode->push_back(*episodeElement);
-    for(int i = 0; i < episodeLen; i++)
-    {
-        //State nextState = new State();
-        //(*retEpisode)[0] = 324;
-    }
-    return *retEpisode;
-}
 
+    State *startState = new State(vX, vY, distUp, distDown, distBarrier, barrierUp, barrierDown);
+    bool action;
+    float Q;
+    action = actionSelection(startState, &Q);
+    EpisodeElement *episodeElement = new EpisodeElement(startState, action, 1, Q);
+    retEpisode->push_back(*episodeElement);
+
+    for(int i = 1; i < episodeLen; i++)
+    {
+        int reward = 1;
+        if (action)
+        {
+            dy = vY * dt/1000 + 0.5 * a_up * (dt/1000) * (dt/1000);
+            vY = vY + a_up * dt / 1000;
+        }
+        else
+        {
+            dy = vY * dt/1000 + 0.5 * a_down * (dt/1000) * (dt/1000);
+            vY = vY + a_down * dt / 1000;
+        }
+        distUp += dy;
+        distDown -= dy;
+        distBarrier += vX * dt/1000;
+        if (distBarrier < 0)
+        {
+            // check crash
+            if (distUp >= barrierUp && distDown >= barrierDown)
+            {
+                reward = -100;
+            }
+            // create new barrier
+            barrierUp = rand() % 230;
+            barrierDown = 230 - barrierUp;
+            distBarrier = 550;
+        }
+        if (distUp <= 0)
+        {
+            distUp = 0;
+            vY = 0;
+            reward = -100;
+            distDown = 263;
+        }
+        if (distDown <= 0)
+        {
+            distUp = 263;
+            vY = 0;
+            reward = -100;
+            distDown = 0;
+        }
+        State *nextState = new State(vX, vY, distUp, distDown, distBarrier, barrierUp, barrierDown);
+        action = actionSelection(nextState, &Q);
+        EpisodeElement *newepisodeElement = new EpisodeElement(nextState, action, reward, Q);
+        retEpisode->push_back(*newepisodeElement);
+    }
+    return retEpisode;
+}
 
 
 /*
