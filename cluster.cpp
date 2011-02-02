@@ -13,8 +13,8 @@ Cluster::Cluster()
     }
     this->alphaDown = 1;
     this->alphaUp = 1;
-    this->sigmaDown = 1;
-    this->sigmaUp = 1;
+    this->sigmaDown = 6000;
+    this->sigmaUp = 6000;
 }
 
 Cluster::Cluster(ColumnVector *mu)
@@ -23,8 +23,8 @@ Cluster::Cluster(ColumnVector *mu)
     this->mu = mu;
     this->alphaDown = 1;
     this->alphaUp = 1;
-    this->sigmaDown = 1;
-    this->sigmaUp = 1;
+    this->sigmaDown = 6000;
+    this->sigmaUp = 6000;
 
     //   TRACE << "new cluster created! mu = " << mu.transpose() << endl;
 }

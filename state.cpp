@@ -14,7 +14,13 @@ State::State(float vX, float vY, float distUp, float distDown, float distBarrier
 
 ostream& operator << (ostream &o, State &state)
 {
-    o << "bu: " << state.barrierUp << "bd: " << state.barrierDown << endl;
+    o << state.vX << " " << state.vY << " " << state.distUp << " " << state.distDown << " " << state.distBarrier << " " << state.barrierUp << " " << state.barrierDown;
+    return o;
+}
+istream& operator >> (istream &i, State &state)
+{
+    i >> state.vX >> state.vY >> state.distUp >> state.distDown >> state.distBarrier >> state.barrierUp >> state.barrierDown;
+    return i;
 }
 
 float State::getVX()

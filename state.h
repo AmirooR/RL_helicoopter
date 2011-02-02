@@ -47,6 +47,7 @@ public:
     };
 
     friend ostream& operator << (ostream &o, State &state);
+    friend istream& operator >> (istream &i, State &state);
 
 private:
     float vX;

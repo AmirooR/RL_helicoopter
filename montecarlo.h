@@ -24,8 +24,10 @@ public:
     bool actionSelection(State *state, float *retQ);
     vector<Cluster> getClusterList();
     vector<EpisodeElement>* episodeGenerator(int episodeLen);
+    vector<EpisodeElement>* episodeGeneratorFromPlay(int episodeLen);
     int getMaxNumOfClusters();
     Cluster loadSingleCluster(FILE* fp, int dim);
+    int saveEpisode(vector<EpisodeElement> *episode);
 
 private:
     vector<Cluster> clusterList;

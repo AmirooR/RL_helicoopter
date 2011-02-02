@@ -23,10 +23,14 @@ private:
     float v_x;
     bool lastCrash;
 
+    bool saveEpisode;
+    bool autoPilot;
+
     QGraphicsItem *cops;
     QGraphicsItem *barrier;
     MonteCarlo monteCarlo;
     vector<EpisodeElement> *episode;
+
 
     void episodeVisualizer(vector<EpisodeElement> *episode);
 public:

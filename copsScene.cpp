@@ -9,6 +9,7 @@
 #include <QGraphicsItem>
 #include <QPointF>
 #include <QKeyEvent>
+#include <string>
 
 #include <octave/oct.h>
 
@@ -40,7 +41,9 @@ CopsScene::CopsScene()
     cout<< "CopsScene" <<endl;
     episode = new vector<EpisodeElement>();
     episode->reserve(200);
-    timerId = startTimer(dt);
+    //timerId = startTimer(dt);
+    saveEpisode = false;
+    autoPilot = false;
 }
 void CopsScene::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
@@ -65,9 +68,42 @@ void CopsScene::keyPressEvent(QKeyEvent *event)
         }
         toggle = !toggle;
     }
-    if (event->key() == 'S')
+    if (event->key() == 'N')
     {
-        this->episodeVisualizer(this->monteCarlo.episodeGenerator(1000));
+        for (int i = 0; i < 1000; i++)
+        {
+            vector<EpisodeElement> *episode = this->monteCarlo.episodeGenerator(100);
+            this->episodeVisualizer(episode);
+            monteCarlo.updateClusters(*episode);
+        }
+    }
+    if (event->key() == 'S') // save clusters
+    {
+        this->monteCarlo.saveClusters();
+    }
+    if (event->key() == 'P')
+    {
+        autoPilot = !autoPilot;
+        if (autoPilot)
+        {
+            cerr << "Auto Pilot ..." << endl;
+        }
+        if (!autoPilot)
+        {
+            cerr << "Stop auto pilot ..." << endl;
+        }
+    }
+    if (event->key() == 'I')
+    {
+        saveEpisode = !saveEpisode;
+        if (saveEpisode)
+        {
+            cerr << "Saving Episodes ..." << endl;
+        }
+        if (!saveEpisode)
+        {
+            cerr << "Stop saving Episodes ..." << endl;
+        }
     }
 }
 
@@ -78,6 +114,7 @@ void CopsScene::episodeVisualizer(vector<EpisodeElement> *episode)
     {
         cops->setPos(50, episodeItr->getState()->getDistUp());
         barrier->setPos(50 + episodeItr->getState()->getDistBarrier(), episodeItr->getState()->getBarrierUp());
+        usleep(330000);
         TRACE << cops->pos().y() << endl;
         episodeItr++;
     }
@@ -100,83 +137,108 @@ void CopsScene::timerEvent(QTimerEvent *)
 {
     static bool clustersSaved = true; //NOTE: make it false for saving
     static int clusterMe = 0;
+    static int episodeItr = 0;
+    int reward = 1;
+    bool action;
     float dy = 0;
-    QPointF currentPos = cops->pos();
-    if (this->mouseState == CLICKED)
+    if (!autoPilot)
     {
-        dy = v0 * dt/1000 + 0.5 * a_up * (dt/1000) * (dt/1000);
-        v0 = v0 + a_up * dt / 1000;
-    }
-    if (this->mouseState == RELEASED)
-    {
-        dy = v0 * dt/1000 + 0.5 * a_down * (dt/1000) * (dt/1000);
-        v0 = v0 + a_down * dt / 1000;
-    }
-
-    if (currentPos.y() + dy > this->sceneRect().height() - cops->boundingRect().height())
-    {
-        cops->setPos(currentPos.x(), this->sceneRect().height() - cops->boundingRect().height());
-        v0 = v0 / 100;
-    }
-    else if (currentPos.y() + dy < 0)
-    {
-        cops->setPos(currentPos.x(),0);
-        v0 = v0 / 100;
-    }
-    cops->moveBy(0, dy);
-
-
-    barrier->moveBy(v_x,0);
-    currentPos = barrier->pos();
-    if (currentPos.x() < 0)
-    {
-        float newY = qrand() % int(this->height() - barrier->boundingRect().height());
-        barrier->setPos(this->width(), newY);
-        lastCrash = false;
-    }
-    QList<QGraphicsItem *> collidItems = this->collidingItems(barrier);
-    foreach (QGraphicsItem *collideItem, collidItems)
-    {
-        if (collideItem->type() == HELICOPS && !lastCrash)
+        QPointF currentPos = cops->pos();
+        if (this->mouseState == CLICKED)
         {
-            cout << "Crashed!" << endl;
-            TRACE << barrier->pos().x() << "," << cops->pos().x() + cops->boundingRect().width() << endl;
-            lastCrash = true;
+            dy = v0 * dt/1000 + 0.5 * a_up * (dt/1000) * (dt/1000);
+            v0 = v0 + a_up * dt / 1000;
+            action = true;
+
+        }
+        if (this->mouseState == RELEASED)
+        {
+            dy = v0 * dt/1000 + 0.5 * a_down * (dt/1000) * (dt/1000);
+            v0 = v0 + a_down * dt / 1000;
+            action = false;
+        }
+
+        if (currentPos.y() + dy > this->sceneRect().height() - cops->boundingRect().height())
+        {
+            cops->setPos(currentPos.x(), this->sceneRect().height() - cops->boundingRect().height());
+            v0 = v0 / 100;
+            reward = -100;
+        }
+        else if (currentPos.y() + dy < 0)
+        {
+            cops->setPos(currentPos.x(),0);
+            v0 = v0 / 100;
+            reward = -100;
+        }
+        cops->moveBy(0, dy);
+
+        barrier->moveBy(v_x,0);
+        currentPos = barrier->pos();
+        if (currentPos.x() < 0)
+        {
+            float newY = qrand() % int(this->height() - barrier->boundingRect().height());
+            barrier->setPos(this->width(), newY);
+            lastCrash = false;
+        }
+        QList<QGraphicsItem *> collidItems = this->collidingItems(barrier);
+        foreach (QGraphicsItem *collideItem, collidItems)
+        {
+            if (collideItem->type() == HELICOPS && !lastCrash)
+            {
+                cout << "Crashed!" << endl;
+                reward = -100;
+                TRACE << barrier->pos().x() << "," << cops->pos().x() + cops->boundingRect().width() << endl;
+                lastCrash = true;
+            }
+        }
+        clusterMe++;
+        float distUp = cops->pos().y();
+        float distDown = this->height() - cops->pos().y();
+        float distBarrier = barrier->pos().x() - cops->pos().x();
+        float barrierUp = barrier->pos().y();
+        float barrierDown = this->height() - barrier->pos().y();
+
+        State *state = new State(v_x, v0, distUp, distDown,
+                                 distBarrier,
+                                 barrierUp,
+                                 barrierDown);
+
+        //    TRACE << "distUp: " << distUp << " ,distDown: " << distDown << endl;
+        //    TRACE << "distBarrier: " << distBarrier << endl;
+        //    TRACE << "barrierUp: " << barrierUp << " ,barrierDown: " << barrierDown << endl;
+        EpisodeElement ep(state, action, reward); //TODO: check? not used pointers
+        episode->push_back(ep);
+
+        if (clusterMe % 100 == 0)
+        {
+            cout << "New Round!" << endl;
+            monteCarlo.clustring(*episode); //TODO: check? not used pointers
+            if (saveEpisode)
+            {
+                monteCarlo.saveEpisode(episode);
+            }
+            cout << "Number of Clusters: " << monteCarlo.getClusterList().size() << endl;
+            episode->clear();
+            episode->reserve(100);
+            if(monteCarlo.getClusterList().size() == monteCarlo.getMaxNumOfClusters() && !clustersSaved)
+            {
+                monteCarlo.saveClusters();
+                clustersSaved = true;
+            }
+            monteCarlo.updateClusters(*episode);
         }
     }
-    clusterMe++;
-    //vector<EpisodeElement> *
-    if (clusterMe % 100 == 0)
+    else
     {
-        cout << "New Round!" << endl;
-        monteCarlo.clustring(*episode); //TODO: check? not used pointers
-        cout << "Number of Clusters: " << monteCarlo.getClusterList().size() << endl;
-        episode->empty();
-        episode->reserve(100);
-        if(monteCarlo.getClusterList().size() == monteCarlo.getMaxNumOfClusters() && !clustersSaved)
+        if (episodeItr % 100 == 0)
         {
-            monteCarlo.saveClusters();
-            clustersSaved = true;
+            episode = this->monteCarlo.episodeGeneratorFromPlay(100);
+            episodeItr = 0;
         }
+        EpisodeElement ep = (*episode)[episodeItr];
+        ep.getState();
+        cops->setPos(50, ep.getState()->getDistUp());
+        barrier->setPos(50 + ep.getState()->getDistBarrier(), ep.getState()->getBarrierUp());
+        episodeItr++;
     }
-
-
-    float distUp = cops->pos().y();
-    float distDown = this->height() - cops->pos().y();
-    float distBarrier = barrier->pos().x() - cops->pos().x();
-    float barrierUp = barrier->pos().y();
-    float barrierDown = this->height() - barrier->pos().y();
-
-    State *state = new State(v_x, v0, distUp, distDown,
-                             distBarrier,
-                             barrierUp,
-                             barrierDown);
-
-    //    TRACE << "distUp: " << distUp << " ,distDown: " << distDown << endl;
-    //    TRACE << "distBarrier: " << distBarrier << endl;
-    //    TRACE << "barrierUp: " << barrierUp << " ,barrierDown: " << barrierDown << endl;
-    bool action = this->mouseState == CLICKED ? true : false;
-    EpisodeElement ep(state, action, 1); //TODO: check? not used pointers
-    episode->push_back(ep);
 }
-

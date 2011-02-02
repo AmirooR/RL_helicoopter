@@ -1,14 +1,18 @@
+#include <fstream>
 #include "montecarlo.h"
 #include "util.h"
 
 MonteCarlo::MonteCarlo()
-    :maxNumOfClusters(50)
+    :maxNumOfClusters(150)
 {
+    rhoAlpha = 0.05;
+    rhoSigma = 0.05;
 }
 
 void MonteCarlo::setThreshold(ColumnVector tr)
 {
     this->threshold = tr;
+
 }
 
 vector<Cluster> MonteCarlo::getClusterList()
@@ -88,7 +92,6 @@ Cluster MonteCarlo::loadSingleCluster(FILE* fp, int dim)
     c.setSigmaDown(sigDown);
     c.setSigmaUp(sigUp);
     c.setMu(mean);
-    TRACE << mean->transpose() << endl;
     return c;
 }
 
@@ -112,10 +115,10 @@ bool MonteCarlo::actionSelection(State *state, float *retQ)
     {
         // max
         *retQ = max(clickQ, releasedQ);
-
     }
 
-    eps -= 0.001;
+    //    eps -= 0.001;
+
     if (*retQ == clickQ)
     {
         return true;
@@ -178,9 +181,122 @@ void MonteCarlo::clustring(vector<EpisodeElement> &episode)
     }
 }
 
+int MonteCarlo::saveEpisode(vector<EpisodeElement> *episode)
+{
+    static int id = 0;
+    char fileName[20] = {0};
+    sprintf(fileName, "episode_%d.dat", id);
+    ofstream saveFile(fileName);
+    vector<EpisodeElement>::iterator episodeItr = episode->begin();
+    while(episodeItr != episode->end())
+    {
+        saveFile << *episodeItr << endl;
+        episodeItr++;
+    }
+   saveFile.close();
+   id++;
+   return id;
+}
+
+vector<EpisodeElement>* MonteCarlo::episodeGeneratorFromPlay(int episodeLen)
+{
+    static int id = 0;
+    char fileName[20] = {0};
+    sprintf(fileName, "episode_%d.dat", id);
+    ifstream loadFile(fileName);
+    State *tmpState = new State();
+
+    TRACE << "Generating Episode from file ..." << fileName << endl;
+    // env parameters
+    float a_up = -500;
+    float a_down = 350;
+    float dt = 1000 / 33;
+
+    // state vars
+    float vX;
+    float vY;
+    float distUp;
+    float distDown;
+    float distBarrier;
+    float barrierUp;
+    float barrierDown;
+    float dy;
+    float Q;
+    float reward;
+    bool action;
+
+
+    vector<EpisodeElement> *retEpisode = new vector<EpisodeElement>();
+    retEpisode->reserve(episodeLen);
+    loadFile >> *tmpState >> action >> reward;
+    EpisodeElement *episodeElement = new EpisodeElement(tmpState, action, reward, Q);
+    retEpisode->push_back(*episodeElement);
+
+    vY = tmpState->getVY();
+    vX = tmpState->getVX();
+    distUp = tmpState->getDistUp();
+    distDown = tmpState->getDistDown();
+    distBarrier = tmpState->getDistBarrier();
+    barrierUp = tmpState->getBarrierUp();
+    barrierDown = tmpState->getBarrierDown();
+
+    for(int i = 1; i < episodeLen; i++)
+    {
+        //TRACE << "action: " << action << endl;
+        if (action)
+        {
+            dy = vY * dt/1000 + 0.5 * a_up * (dt/1000) * (dt/1000);
+            vY = vY + a_up * dt / 1000;
+        }
+        else
+        {
+            dy = vY * dt/1000 + 0.5 * a_down * (dt/1000) * (dt/1000);
+            vY = vY + a_down * dt / 1000;
+        }
+        distUp += dy;
+        distDown -= dy;
+        distBarrier += vX;
+        if (distBarrier < 50)
+        {
+            // check crash
+            if (distUp >= barrierUp && distDown >= barrierDown)
+            {
+                reward = -100;
+            }
+            // create new barrier
+            barrierUp = rand() % 230;
+            barrierDown = 230 - barrierUp;
+            distBarrier = 550;
+            //     TRACE << "one barrier passed!" << endl;
+        }
+        if (distUp <= 0)
+        {
+            distUp = 0;
+            vY = 0;
+            reward = -100;
+            distDown = 263;
+        }
+        if (distDown <= 0)
+        {
+            distUp = 263;
+            vY = 0;
+            reward = -100;
+            distDown = 0;
+        }
+
+        State *nextState = new State(vX, vY, distUp, distDown, distBarrier, barrierUp, barrierDown);
+        loadFile >> *tmpState >> action >> reward;
+        EpisodeElement *newepisodeElement = new EpisodeElement(nextState, action, reward, Q);
+        retEpisode->push_back(*newepisodeElement);
+    }
+    loadFile.close();
+    id++;
+    return retEpisode;
+}
 
 vector<EpisodeElement>* MonteCarlo::episodeGenerator(int episodeLen)
 {
+    TRACE << "new episode ..." << endl;
     // env parameters
     float a_up = -500;
     float a_down = 350;
@@ -217,7 +333,7 @@ vector<EpisodeElement>* MonteCarlo::episodeGenerator(int episodeLen)
 
     for(int i = 1; i < episodeLen; i++)
     {
-        TRACE << "action: " << action << endl;
+        //TRACE << "action: " << action << endl;
         int reward = 1;
         if (action)
         {
@@ -231,8 +347,8 @@ vector<EpisodeElement>* MonteCarlo::episodeGenerator(int episodeLen)
         }
         distUp += dy;
         distDown -= dy;
-        distBarrier += vX * dt/1000;
-        if (distBarrier < 0)
+        distBarrier += vX;
+        if (distBarrier < 50)
         {
             // check crash
             if (distUp >= barrierUp && distDown >= barrierDown)
@@ -243,6 +359,7 @@ vector<EpisodeElement>* MonteCarlo::episodeGenerator(int episodeLen)
             barrierUp = rand() % 230;
             barrierDown = 230 - barrierUp;
             distBarrier = 550;
+            //     TRACE << "one barrier passed!" << endl;
         }
         if (distUp <= 0)
         {
@@ -258,6 +375,7 @@ vector<EpisodeElement>* MonteCarlo::episodeGenerator(int episodeLen)
             reward = -100;
             distDown = 0;
         }
+
         State *nextState = new State(vX, vY, distUp, distDown, distBarrier, barrierUp, barrierDown);
         action = actionSelection(nextState, &Q);
         EpisodeElement *newepisodeElement = new EpisodeElement(nextState, action, reward, Q);
@@ -294,6 +412,7 @@ void MonteCarlo::updateClusters(vector<EpisodeElement> &episode)
     int numStates = episode.size();
     vector<float> qvalues;
     int Returns = 0;
+    float error = 0.0f;
     for(i=0;i<numStates;i++)
     {
         EpisodeElement e = episode[i];
@@ -321,6 +440,7 @@ void MonteCarlo::updateClusters(vector<EpisodeElement> &episode)
             {
                 //float *grads = new float(2);
                 float* grads = calcGrad(qvalues[i],e,Returns,c);
+                error += Returns - qvalues[i];
                 e.getAction() ? c.setAlphaUp(c.getAlphaUp()-(this->rhoAlpha)*grads[0]) : c.setAlphaDown(c.getAlphaDown()-(this->rhoAlpha)*grads[0]);
                 e.getAction() ? c.setSigmaUp(c.getSigmaUp()-(this->rhoSigma)*grads[1]) : c.setSigmaDown(c.getSigmaDown()-(this->rhoSigma)*grads[1]);
                 delete grads;
@@ -328,6 +448,7 @@ void MonteCarlo::updateClusters(vector<EpisodeElement> &episode)
         }
         Returns -= e.getReward();
     }
+    cout<<"error is: "<<error<<endl;
 }
 
 float MonteCarlo::computeQ(State *state, bool action)

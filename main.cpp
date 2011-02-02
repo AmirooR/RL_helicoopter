@@ -10,8 +10,10 @@
 int main(int argc, char **argv)
 {
 	QApplication app(argc, argv);
-	qsrand(QTime(0,0,0).secsTo(QTime::currentTime()));
-        srand(time(0));
+        //qsrand(QTime(0,0,0).secsTo(QTime::currentTime()));
+        qsrand(1);
+        //srand(time(0));
+        srand(1);
 
         int screenWidth = 600;
         int screenHeight = 300;

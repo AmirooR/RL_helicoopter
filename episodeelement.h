@@ -19,6 +19,9 @@ public:
     float getQ();
     void setQ(float Q);
 
+    friend ostream& operator << (ostream &o, EpisodeElement &);
+    friend istream& operator >> (istream &i, EpisodeElement &);
+
 private:
     State *state;
     bool action;
