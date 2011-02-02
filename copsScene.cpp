@@ -162,13 +162,13 @@ void CopsScene::timerEvent(QTimerEvent *)
         {
             cops->setPos(currentPos.x(), this->sceneRect().height() - cops->boundingRect().height());
             v0 = v0 / 100;
-            reward = -100;
+            reward = -1;
         }
         else if (currentPos.y() + dy < 0)
         {
             cops->setPos(currentPos.x(),0);
             v0 = v0 / 100;
-            reward = -100;
+            reward = -1;
         }
         cops->moveBy(0, dy);
 
@@ -213,6 +213,7 @@ void CopsScene::timerEvent(QTimerEvent *)
         {
             cout << "New Round!" << endl;
             monteCarlo.clustring(*episode); //TODO: check? not used pointers
+            monteCarlo.updateClusters(*episode);
             if (saveEpisode)
             {
                 monteCarlo.saveEpisode(episode);
@@ -225,7 +226,6 @@ void CopsScene::timerEvent(QTimerEvent *)
                 monteCarlo.saveClusters();
                 clustersSaved = true;
             }
-            monteCarlo.updateClusters(*episode);
         }
     }
     else

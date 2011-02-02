@@ -5,8 +5,31 @@
 MonteCarlo::MonteCarlo()
     :maxNumOfClusters(150)
 {
-    rhoAlpha = 0.05;
-    rhoSigma = 0.05;
+    rhoAlpha = 0.001;
+    rhoSigma = 0.001;
+
+    maxState = new ColumnVector(1);
+    maxState->resize(7);
+    (*maxState)(State::BARRIER_DOWN) = 230.0f;
+    (*maxState)(State::BARRIER_UP) = 230.0f;
+    (*maxState)(State::DIST_BARRIER) = 550.0f;
+    (*maxState)(State::DIST_DOWN) = 263.0f;
+    (*maxState)(State::DIST_UP) = 263.0f;
+    (*maxState)(State::VX) = -12.0f;
+    (*maxState)(State::VY) = 500.0f;
+
+    minState = new ColumnVector(1);
+    minState->resize(7);
+    (*minState)(State::BARRIER_DOWN) = 0.0f;
+    (*minState)(State::BARRIER_UP) = 0.0f;
+    (*minState)(State::DIST_BARRIER) = -50.0f;
+    (*minState)(State::DIST_DOWN) = 0.0f;
+    (*minState)(State::DIST_UP) = 0.0f;
+    (*minState)(State::VX) = -12.0f;
+    (*minState)(State::VY) = -550.0f;
+
+    (*maxState) = (*maxState)-(*minState);
+    ignoreThreshold = 1;
 }
 
 void MonteCarlo::setThreshold(ColumnVector tr)
@@ -18,6 +41,23 @@ void MonteCarlo::setThreshold(ColumnVector tr)
 vector<Cluster> MonteCarlo::getClusterList()
 {
     return clusterList;
+}
+
+ColumnVector* MonteCarlo::normalizeMax(ColumnVector *normalMe)
+
+{
+    ColumnVector* returnMe = new ColumnVector(1);
+    returnMe->resize(7);
+
+    (*returnMe) = ((*normalMe)-(*minState));
+
+    for(int i=0;i<7;i++)
+    {
+        (*returnMe)(i) = (*returnMe)(i) / (*maxState)(i);
+
+    }
+    (*returnMe)(0) = 0.0001;
+    return returnMe;
 }
 
 void MonteCarlo::saveClusters()
@@ -193,9 +233,9 @@ int MonteCarlo::saveEpisode(vector<EpisodeElement> *episode)
         saveFile << *episodeItr << endl;
         episodeItr++;
     }
-   saveFile.close();
-   id++;
-   return id;
+    saveFile.close();
+    id++;
+    return id;
 }
 
 vector<EpisodeElement>* MonteCarlo::episodeGeneratorFromPlay(int episodeLen)
@@ -263,6 +303,9 @@ vector<EpisodeElement>* MonteCarlo::episodeGeneratorFromPlay(int episodeLen)
             {
                 reward = -100;
             }
+        }
+        if (distBarrier < -50)
+        {
             // create new barrier
             barrierUp = rand() % 230;
             barrierDown = 230 - barrierUp;
@@ -392,23 +435,31 @@ vector<EpisodeElement>* MonteCarlo::episodeGenerator(int episodeLen)
  */
 float* MonteCarlo::calcGrad(float fval,EpisodeElement e,int Returns,Cluster c)
 {
+    ColumnVector *temp;
     float* grads = new float(2);
     ColumnVector s_mu = e.getState()->toColumnVector() - *(c.getMu());
+    temp = normalizeMax(&s_mu);
+  //  TRACE << "s_mu: " << s_mu.transpose() << endl;
+    s_mu = *temp;
     RowVector s_mu_transpose = s_mu.transpose();
 
     float sigma2 = e.getAction() ? c.getSigmaUp() : c.getSigmaDown(); //NOTE: sigma2 is stored in clusters!
+    sigma2 = abs(sigma2);
     float s_mu_sig = (s_mu_transpose * s_mu) / (2 * sigma2);
     float namaE = expf(-s_mu_sig);
     float delta = Returns - fval;
     grads[0] = -2.0 * namaE * delta;
     float alpha = e.getAction() ? c.getAlphaUp() : c.getAlphaDown();
     grads[1] = -2.0 * alpha * (delta) * s_mu_sig * namaE / sigma2;
+ //   TRACE << "Alpha: " << alpha << " Sigma2: " << sigma2 << endl;
+ //   fprintf(stderr, "TRACE:: %.6f, %.6f", alpha, sigma2);
+    delete temp;
     return grads;
 }
 
 void MonteCarlo::updateClusters(vector<EpisodeElement> &episode)
 {
-    int i,j;
+    int i;
     int numStates = episode.size();
     vector<float> qvalues;
     int Returns = 0;
@@ -419,15 +470,16 @@ void MonteCarlo::updateClusters(vector<EpisodeElement> &episode)
         Returns += e.getReward();
         qvalues.push_back(computeQ(e.getState(),e.getAction()));     //TODO: exp recomputation -> low performace
     }
+    cout<<     "Returns: "   <<    Returns   << endl;
 
-    for(i=0;i<numStates;i++)
+    for(i = 0; i < numStates; i++)
     {
         EpisodeElement e = episode[i];
-        for(j=0;j<clusterList.size();j++)
+        vector<Cluster>::iterator clusterItr = clusterList.begin();
+        while(clusterItr != clusterList.end())
         {
-            Cluster c = clusterList[j];
             bool ignore = false;
-            ColumnVector vec = c.distance(e.getState()->toColumnVector()) - threshold * ignoreThreshold;
+            ColumnVector vec = clusterItr->distance(e.getState()->toColumnVector()) - threshold * ignoreThreshold;
             for(int k=0;k<threshold.dim1();k++)
             {
                 if(vec(k)>=0)
@@ -435,30 +487,37 @@ void MonteCarlo::updateClusters(vector<EpisodeElement> &episode)
                     ignore = true;
                     break;
                 }
+
             }
+
             if(!ignore) //TODO: works?
             {
                 //float *grads = new float(2);
-                float* grads = calcGrad(qvalues[i],e,Returns,c);
+                float* grads = calcGrad(qvalues[i],e,Returns,*clusterItr);
                 error += Returns - qvalues[i];
-                e.getAction() ? c.setAlphaUp(c.getAlphaUp()-(this->rhoAlpha)*grads[0]) : c.setAlphaDown(c.getAlphaDown()-(this->rhoAlpha)*grads[0]);
-                e.getAction() ? c.setSigmaUp(c.getSigmaUp()-(this->rhoSigma)*grads[1]) : c.setSigmaDown(c.getSigmaDown()-(this->rhoSigma)*grads[1]);
+                //TRACE << "Return: " << endl;
+                e.getAction() ? clusterItr->setAlphaUp(clusterItr->getAlphaUp()-(this->rhoAlpha)*grads[0]) : clusterItr->setAlphaDown(clusterItr->getAlphaDown()-(this->rhoAlpha)*grads[0]);
+                e.getAction() ? clusterItr->setSigmaUp(clusterItr->getSigmaUp()-(this->rhoSigma)*grads[1]) : clusterItr->setSigmaDown(clusterItr->getSigmaDown()-(this->rhoSigma)*grads[1]);
+      //          TRACE << "GradeAlpha: " << grads[0] << " GradSigma: " << grads[1] << endl;
                 delete grads;
             }
+            clusterItr++;
         }
         Returns -= e.getReward();
     }
-    cout<<"error is: "<<error<<endl;
+    cout << "error is: " << error << endl;
 }
 
 float MonteCarlo::computeQ(State *state, bool action)
 {
+    ColumnVector* temp;
     float val = 0.0f;
-    for(int i=0;i<clusterList.size();i++)
+    vector<Cluster>::iterator clusterItr = clusterList.begin();
+    while(clusterItr != clusterList.end())
     {
-        Cluster c= clusterList[i];
+
         bool ignore = false;
-        ColumnVector vec = c.distance(state->toColumnVector()) - threshold * ignoreThreshold;
+        ColumnVector vec = clusterItr->distance(state->toColumnVector()) - threshold * ignoreThreshold;
         for(int k=0;k<threshold.dim1();k++)
         {
             if(vec(k)>=0)
@@ -470,14 +529,19 @@ float MonteCarlo::computeQ(State *state, bool action)
 
         if(!ignore)
         {
-            ColumnVector s_mu = state->toColumnVector() - *(c.getMu());
+            ColumnVector s_mu = state->toColumnVector() - *(clusterItr->getMu());
+            temp = normalizeMax(&s_mu);
+            s_mu = *temp;
             RowVector s_mu_transpose = s_mu.transpose();
-            float sigma2 = action ? c.getSigmaUp() : c.getSigmaDown();
+            float sigma2 = action ? clusterItr->getSigmaUp() : clusterItr->getSigmaDown();
+            sigma2 = abs(sigma2);
             float s_mu_sig = (s_mu_transpose * s_mu)/(2*sigma2);
             float namaE = expf(-s_mu_sig);
-            float alpha = action?c.getAlphaUp() : c.getAlphaDown();
+            float alpha = action ? clusterItr->getAlphaUp() : clusterItr->getAlphaDown();
             val += alpha*namaE;
+            delete temp;
         }
+        clusterItr++;
     }
     return val;
 }

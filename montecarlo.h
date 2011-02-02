@@ -29,6 +29,8 @@ public:
     Cluster loadSingleCluster(FILE* fp, int dim);
     int saveEpisode(vector<EpisodeElement> *episode);
 
+    ColumnVector* normalizeMax(ColumnVector*);
+
 private:
     vector<Cluster> clusterList;
     int maxNumOfClusters;
@@ -39,6 +41,9 @@ private:
     int ignoreThreshold;        // age fasele ye state bishtar az inbarabare thereshold bood, update nakon
     float rhoAlpha;
     float rhoSigma;
+
+    ColumnVector* maxState;
+    ColumnVector* minState;
 
 };
 
