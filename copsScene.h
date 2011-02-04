@@ -25,7 +25,8 @@ private:
 
     bool saveEpisode;
     bool autoPilot;
-
+    bool clustersSaved;
+    bool pause;
     QGraphicsItem *cops;
     QGraphicsItem *barrier;
     MonteCarlo monteCarlo;

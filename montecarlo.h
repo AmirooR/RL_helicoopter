@@ -31,6 +31,7 @@ public:
 
     ColumnVector* normalizeMax(ColumnVector*);
 
+
 private:
     vector<Cluster> clusterList;
     int maxNumOfClusters;
@@ -44,6 +45,18 @@ private:
 
     ColumnVector* maxState;
     ColumnVector* minState;
+
+
+
+
+
+    float vY;
+    float distUp;
+    float distDown;
+    float distBarrier;
+    float barrierUp;
+    float barrierDown;
+    bool lastCrash;
 
 };
 

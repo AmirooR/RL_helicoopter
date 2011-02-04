@@ -10,10 +10,10 @@
 int main(int argc, char **argv)
 {
 	QApplication app(argc, argv);
-        //qsrand(QTime(0,0,0).secsTo(QTime::currentTime()));
-        qsrand(1);
-        //srand(time(0));
-        srand(1);
+        qsrand(QTime(0,0,0).secsTo(QTime::currentTime()));
+//        qsrand(1);
+        srand(time(0));
+//        srand(1);
 
         int screenWidth = 600;
         int screenHeight = 300;
@@ -49,7 +49,7 @@ int main(int argc, char **argv)
 	view.setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
 	view.setDragMode(QGraphicsView::ScrollHandDrag);
 	view.setWindowTitle(QT_TRANSLATE_NOOP(QGraphicsView, "Helicops!"));
-        view.resize(screenWidth, screenHeight);
+        view.resize(screenWidth + 20, screenHeight + 20);
 	view.show();
 
 	return app.exec();

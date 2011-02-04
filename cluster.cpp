@@ -19,14 +19,11 @@ Cluster::Cluster()
 
 Cluster::Cluster(ColumnVector *mu)
 {
-    TRACE << mu->dim1() << endl;
     this->mu = mu;
     this->alphaDown = 1;
     this->alphaUp = 1;
     this->sigmaDown = 1;
     this->sigmaUp = 1;
-
-    //   TRACE << "new cluster created! mu = " << mu.transpose() << endl;
 }
 
 Cluster::Cluster(ColumnVector *mu, float sigma, float alpha, float sigmaDown, float alphaDown)

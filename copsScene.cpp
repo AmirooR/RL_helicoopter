@@ -29,21 +29,20 @@ CopsScene::CopsScene()
 
     ColumnVector tr(7);
     tr(State::VX) = -v_x / 3.0;
-    tr(State::VY) = 1050 / 3.0;
-    tr(State::DIST_UP) = 300 / 4.0;
-    tr(State::DIST_DOWN) = 300 / 4.0;
-    tr(State::DIST_BARRIER) = 550 / 3.0;
-    tr(State::BARRIER_UP) = 200 / 4.0;
-    tr(State::BARRIER_DOWN) = 200 / 4.0;
+    tr(State::VY) = 1050 / 10.0;
+    tr(State::DIST_UP) = 263 / 5.0;
+    tr(State::DIST_DOWN) = 263 / 5.0;
+    tr(State::DIST_BARRIER) = 550 / 5.0;
+    tr(State::BARRIER_UP) = 230 / 5.0;
+    tr(State::BARRIER_DOWN) = 230 / 5.0;
 
     monteCarlo.setThreshold(tr);
-    monteCarlo.loadClusters();
-    cout<< "CopsScene" <<endl;
     episode = new vector<EpisodeElement>();
     episode->reserve(200);
-    //timerId = startTimer(dt);
     saveEpisode = false;
     autoPilot = false;
+    clustersSaved = true; //NOTE: make it false for saving
+    pause = false;
 }
 void CopsScene::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
@@ -55,10 +54,9 @@ void CopsScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 }
 void CopsScene::keyPressEvent(QKeyEvent *event)
 {
-    static bool toggle = true;
     if (event->key() == ' ')
     {
-        if (toggle)
+        if (pause)
         {
             killTimer(timerId);
         }
@@ -66,20 +64,14 @@ void CopsScene::keyPressEvent(QKeyEvent *event)
         {
             timerId = startTimer(dt);
         }
-        toggle = !toggle;
+        pause = !pause;
     }
-    if (event->key() == 'N')
-    {
-        for (int i = 0; i < 1000; i++)
-        {
-            vector<EpisodeElement> *episode = this->monteCarlo.episodeGenerator(100);
-            this->episodeVisualizer(episode);
-            monteCarlo.updateClusters(*episode);
-        }
-    }
+
     if (event->key() == 'S') // save clusters
     {
+        cerr << "Saving Clusters ..." << endl;
         this->monteCarlo.saveClusters();
+        cerr << monteCarlo.getClusterList().size() << " of clusters saved!" << endl;
     }
     if (event->key() == 'P')
     {
@@ -104,6 +96,10 @@ void CopsScene::keyPressEvent(QKeyEvent *event)
         {
             cerr << "Stop saving Episodes ..." << endl;
         }
+    }
+    if (event->key() == 'L')    // load clusters
+    {
+        monteCarlo.loadClusters();
     }
 }
 
@@ -135,7 +131,6 @@ void CopsScene::addItem(QGraphicsItem *item)
 
 void CopsScene::timerEvent(QTimerEvent *)
 {
-    static bool clustersSaved = true; //NOTE: make it false for saving
     static int clusterMe = 0;
     static int episodeItr = 0;
     int reward = 1;
@@ -162,13 +157,13 @@ void CopsScene::timerEvent(QTimerEvent *)
         {
             cops->setPos(currentPos.x(), this->sceneRect().height() - cops->boundingRect().height());
             v0 = v0 / 100;
-            reward = -1;
+            reward = -100;
         }
         else if (currentPos.y() + dy < 0)
         {
             cops->setPos(currentPos.x(),0);
             v0 = v0 / 100;
-            reward = -1;
+            reward = -100;
         }
         cops->moveBy(0, dy);
 
@@ -188,6 +183,7 @@ void CopsScene::timerEvent(QTimerEvent *)
                 cout << "Crashed!" << endl;
                 reward = -100;
                 TRACE << barrier->pos().x() << "," << cops->pos().x() + cops->boundingRect().width() << endl;
+                TRACE << cops->boundingRect().width() << endl;
                 lastCrash = true;
             }
         }
@@ -196,7 +192,7 @@ void CopsScene::timerEvent(QTimerEvent *)
         float distDown = this->height() - cops->pos().y();
         float distBarrier = barrier->pos().x() - cops->pos().x();
         float barrierUp = barrier->pos().y();
-        float barrierDown = this->height() - barrier->pos().y();
+        float barrierDown = this->height() - barrier->pos().y() - barrier->boundingRect().height();
 
         State *state = new State(v_x, v0, distUp, distDown,
                                  distBarrier,
@@ -205,7 +201,7 @@ void CopsScene::timerEvent(QTimerEvent *)
 
         //    TRACE << "distUp: " << distUp << " ,distDown: " << distDown << endl;
         //    TRACE << "distBarrier: " << distBarrier << endl;
-        //    TRACE << "barrierUp: " << barrierUp << " ,barrierDown: " << barrierDown << endl;
+        //        TRACE << "barrierUp: " << barrierUp << " ,barrierDown: " << barrierDown << endl;
         EpisodeElement ep(state, action, reward); //TODO: check? not used pointers
         episode->push_back(ep);
 
@@ -218,7 +214,7 @@ void CopsScene::timerEvent(QTimerEvent *)
             {
                 monteCarlo.saveEpisode(episode);
             }
-            cout << "Number of Clusters: " << monteCarlo.getClusterList().size() << endl;
+            TRACE << "Number of Clusters: " << monteCarlo.getClusterList().size() << endl;
             episode->clear();
             episode->reserve(100);
             if(monteCarlo.getClusterList().size() == monteCarlo.getMaxNumOfClusters() && !clustersSaved)
@@ -228,17 +224,38 @@ void CopsScene::timerEvent(QTimerEvent *)
             }
         }
     }
-    else
+    else        // Auto Pilot
     {
         if (episodeItr % 100 == 0)
         {
-            episode = this->monteCarlo.episodeGeneratorFromPlay(100);
+            episode = this->monteCarlo.episodeGenerator(100);
+            monteCarlo.clustring(*episode);
+            monteCarlo.updateClusters(*episode);
+            cout << "Cluster Size: " << monteCarlo.getClusterList().size() << endl;
+            episode->clear();
+            episode->reserve(100);
             episodeItr = 0;
         }
+
         EpisodeElement ep = (*episode)[episodeItr];
-        ep.getState();
         cops->setPos(50, ep.getState()->getDistUp());
-        barrier->setPos(50 + ep.getState()->getDistBarrier(), ep.getState()->getBarrierUp());
+        barrier->setPos(ep.getState()->getDistBarrier(), ep.getState()->getBarrierUp());
+//        QList<QGraphicsItem *> collidItems = this->collidingItems(barrier);
+//        foreach (QGraphicsItem *collideItem, collidItems)
+//        {
+//            if (collideItem->type() == HELICOPS)
+//            {
+//                cout << "Crashed!" << endl;
+//                reward = -100;
+//                killTimer(timerId);
+//                pause = false;
+//                TRACE << "Reward: " << ep.getReward() << endl;
+//                cout << "distUP: " << ep.getState()->getDistUp() << " distDown: " << ep.getState()->getDistDown() << endl;
+//                cout << "barrierUP: " << ep.getState()->getBarrierUp() << " barrierDown: " << ep.getState()->getBarrierDown() << endl;
+
+//            }
+//        }
+
         episodeItr++;
     }
 }

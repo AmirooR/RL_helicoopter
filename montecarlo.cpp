@@ -3,7 +3,7 @@
 #include "util.h"
 
 MonteCarlo::MonteCarlo()
-    :maxNumOfClusters(150)
+    :maxNumOfClusters(600)
 {
     rhoAlpha = 0.001;
     rhoSigma = 0.001;
@@ -30,6 +30,16 @@ MonteCarlo::MonteCarlo()
 
     (*maxState) = (*maxState)-(*minState);
     ignoreThreshold = 1;
+
+
+
+    vY = 0;
+    distUp = 50;
+    distDown = 250;
+    distBarrier = 550 ;
+    barrierUp =168 ;
+    barrierDown = 132;
+
 }
 
 void MonteCarlo::setThreshold(ColumnVector tr)
@@ -111,7 +121,6 @@ Cluster MonteCarlo::loadSingleCluster(FILE* fp, int dim)
     ColumnVector* mean = new ColumnVector(1);
     fread(mean,sizeof(ColumnVector),1,fp);
 #else
-    cerr<<"ALI!"<<endl;
     ColumnVector *mean = new ColumnVector();
     mean->resize(7);
     for(int i=0;i<dim;i++)
@@ -142,7 +151,7 @@ int MonteCarlo::getMaxNumOfClusters()
 
 bool MonteCarlo::actionSelection(State *state, float *retQ)
 {
-    static float eps = 0.2;
+    static float eps = 0.1;
     float clickQ = this->computeQ(state, true);
     float releasedQ = this->computeQ(state, false);
     float rnd = rand() / float(RAND_MAX);
@@ -159,6 +168,14 @@ bool MonteCarlo::actionSelection(State *state, float *retQ)
 
     //    eps -= 0.001;
 
+    if (clickQ == releasedQ)
+    {
+        rnd = rand() / float(RAND_MAX);
+        if (rnd < .5)
+            return true;
+        else
+            return false;
+    }
     if (*retQ == clickQ)
     {
         return true;
@@ -198,6 +215,7 @@ void MonteCarlo::clustring(vector<EpisodeElement> &episode)
         // no match cluster, create new cluster
         if (!isInAnyCluster && clusterList.size() < maxNumOfClusters)
         {
+//            TRACE << "new cluster created!" << endl;
             ColumnVector *newMu = new ColumnVector();
             newMu->resize(7);
             if (episodeItr->getAction() == true)
@@ -339,7 +357,7 @@ vector<EpisodeElement>* MonteCarlo::episodeGeneratorFromPlay(int episodeLen)
 
 vector<EpisodeElement>* MonteCarlo::episodeGenerator(int episodeLen)
 {
-    TRACE << "new episode ..." << endl;
+    //TRACE << "new episode ..." << endl;
     // env parameters
     float a_up = -500;
     float a_down = 350;
@@ -347,20 +365,21 @@ vector<EpisodeElement>* MonteCarlo::episodeGenerator(int episodeLen)
 
     // state vars
     float vX;
-    float vY;
-    float distUp;
-    float distDown;
-    float distBarrier;
-    float barrierUp;
-    float barrierDown;
+    //    static float vY = 0;
+    //    static float distUp = 50;
+    //    static float distDown = 250;
+    //    static float distBarrier = 550 ;
+    //    static float barrierUp =168 ;
+    //    static float barrierDown = 132;
+
+    //    float vY = 0;
+    //    float distUp = 50;
+    //    float distDown = 250;
+    //    float distBarrier = 550 ;
+    //    float barrierUp =168 ;
+    //    float barrierDown = 132;
 
     vX = -12;
-    vY = 0;
-    distUp = 50;
-    distDown = 250;
-    distBarrier = 550;
-    barrierUp = 168;
-    barrierDown = 132;
     float dy;
 
     vector<EpisodeElement> *retEpisode = new vector<EpisodeElement>();
@@ -389,34 +408,46 @@ vector<EpisodeElement>* MonteCarlo::episodeGenerator(int episodeLen)
             vY = vY + a_down * dt / 1000;
         }
         distUp += dy;
-        distDown -= dy;
+        distDown = 263 - distUp;
         distBarrier += vX;
-        if (distBarrier < 50)
+        if (distBarrier < 120 && distBarrier > 50)
         {
             // check crash
-            if (distUp >= barrierUp && distDown >= barrierDown)
+            if ((distDown <= barrierDown + 70 && distDown >= barrierDown && !lastCrash)
+                        ||
+                (distUp >= barrierUp && distUp <= barrierUp + 70 && !lastCrash))
             {
-                reward = -100;
+                reward = -200;
+                lastCrash = true;
+//                TRACE << "barrier crash!" << endl;
+//                TRACE << "distUP: " << distUp << "distDown: " << distDown << endl;
+//                TRACE << "barrierUP: " << barrierUp << "barrierDown: " << barrierDown << endl;
             }
+        }
+        if (distBarrier < -50)
+        {
             // create new barrier
             barrierUp = rand() % 230;
             barrierDown = 230 - barrierUp;
             distBarrier = 550;
+            lastCrash = false;
             //     TRACE << "one barrier passed!" << endl;
         }
-        if (distUp <= 0)
+        if (distUp < 10)
         {
-            distUp = 0;
-            vY = 0;
-            reward = -100;
-            distDown = 263;
+            distUp = 10;
+            vY = vY / 100;
+            reward = -200;
+            distDown = 263 - distUp;
+            //            TRACE << "episode: Crashed!" << endl;
         }
-        if (distDown <= 0)
+        if (distDown < 10)
         {
-            distUp = 263;
-            vY = 0;
-            reward = -100;
-            distDown = 0;
+            distDown = 10;
+            vY = vY / 100;
+            reward = -200;
+            distUp = 263 - distDown;
+            //            TRACE << "episode: Crashed!" << endl;
         }
 
         State *nextState = new State(vX, vY, distUp, distDown, distBarrier, barrierUp, barrierDown);
@@ -439,7 +470,7 @@ float* MonteCarlo::calcGrad(float fval,EpisodeElement e,int Returns,Cluster c)
     float* grads = new float(2);
     ColumnVector s_mu = e.getState()->toColumnVector() - *(c.getMu());
     temp = normalizeMax(&s_mu);
-  //  TRACE << "s_mu: " << s_mu.transpose() << endl;
+    //  TRACE << "s_mu: " << s_mu.transpose() << endl;
     s_mu = *temp;
     RowVector s_mu_transpose = s_mu.transpose();
 
@@ -451,8 +482,8 @@ float* MonteCarlo::calcGrad(float fval,EpisodeElement e,int Returns,Cluster c)
     grads[0] = -2.0 * namaE * delta;
     float alpha = e.getAction() ? c.getAlphaUp() : c.getAlphaDown();
     grads[1] = -2.0 * alpha * (delta) * s_mu_sig * namaE / sigma2;
- //   TRACE << "Alpha: " << alpha << " Sigma2: " << sigma2 << endl;
- //   fprintf(stderr, "TRACE:: %.6f, %.6f", alpha, sigma2);
+    //   TRACE << "Alpha: " << alpha << " Sigma2: " << sigma2 << endl;
+    //   fprintf(stderr, "TRACE:: %.6f, %.6f", alpha, sigma2);
     delete temp;
     return grads;
 }
@@ -480,14 +511,16 @@ void MonteCarlo::updateClusters(vector<EpisodeElement> &episode)
         {
             bool ignore = false;
             ColumnVector vec = clusterItr->distance(e.getState()->toColumnVector()) - threshold * ignoreThreshold;
+            //            TRACE << "distance: " << clusterItr->distance(e.getState()->toColumnVector()).transpose() << endl;
+            //            TRACE << "vec: " << vec.transpose() << endl;
+            //            TRACE << "threshold: " << threshold.transpose() * ignoreThreshold << endl;
             for(int k=0;k<threshold.dim1();k++)
             {
-                if(vec(k)>=0)
+                if(vec(k) >= 0)
                 {
                     ignore = true;
                     break;
                 }
-
             }
 
             if(!ignore) //TODO: works?
@@ -498,7 +531,7 @@ void MonteCarlo::updateClusters(vector<EpisodeElement> &episode)
                 //TRACE << "Return: " << endl;
                 e.getAction() ? clusterItr->setAlphaUp(clusterItr->getAlphaUp()-(this->rhoAlpha)*grads[0]) : clusterItr->setAlphaDown(clusterItr->getAlphaDown()-(this->rhoAlpha)*grads[0]);
                 e.getAction() ? clusterItr->setSigmaUp(clusterItr->getSigmaUp()-(this->rhoSigma)*grads[1]) : clusterItr->setSigmaDown(clusterItr->getSigmaDown()-(this->rhoSigma)*grads[1]);
-      //          TRACE << "GradeAlpha: " << grads[0] << " GradSigma: " << grads[1] << endl;
+                //          TRACE << "GradeAlpha: " << grads[0] << " GradSigma: " << grads[1] << endl;
                 delete grads;
             }
             clusterItr++;
@@ -520,7 +553,7 @@ float MonteCarlo::computeQ(State *state, bool action)
         ColumnVector vec = clusterItr->distance(state->toColumnVector()) - threshold * ignoreThreshold;
         for(int k=0;k<threshold.dim1();k++)
         {
-            if(vec(k)>=0)
+            if(vec(k) >= 0)
             {
                 ignore = true;
                 break;
@@ -543,5 +576,6 @@ float MonteCarlo::computeQ(State *state, bool action)
         }
         clusterItr++;
     }
+    //   TRACE << "Q: " << val << endl;
     return val;
 }
