@@ -27,10 +27,15 @@ private:
     bool autoPilot;
     bool clustersSaved;
     bool pause;
+    bool replay;
+    int replayId;
+    int episodeItr;
     QGraphicsItem *cops;
     QGraphicsItem *barrier;
     MonteCarlo monteCarlo;
     vector<EpisodeElement> *episode;
+
+    int episodeNumber;
 
 
     void episodeVisualizer(vector<EpisodeElement> *episode);

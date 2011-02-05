@@ -30,19 +30,23 @@ CopsScene::CopsScene()
     ColumnVector tr(7);
     tr(State::VX) = -v_x / 3.0;
     tr(State::VY) = 1050 / 10.0;
-    tr(State::DIST_UP) = 263 / 5.0;
-    tr(State::DIST_DOWN) = 263 / 5.0;
-    tr(State::DIST_BARRIER) = 550 / 5.0;
-    tr(State::BARRIER_UP) = 230 / 5.0;
-    tr(State::BARRIER_DOWN) = 230 / 5.0;
+    tr(State::DIST_UP) = 263 / 7.0;
+    tr(State::DIST_DOWN) = 263 / 7.0;
+    tr(State::DIST_BARRIER) = 550 / 2.0;
+    tr(State::BARRIER_UP) = 230 / 4.0;
+    tr(State::BARRIER_DOWN) = 230 / 4.0;
 
     monteCarlo.setThreshold(tr);
     episode = new vector<EpisodeElement>();
     episode->reserve(200);
     saveEpisode = false;
     autoPilot = false;
+    replay = false;
     clustersSaved = true; //NOTE: make it false for saving
     pause = false;
+
+    episodeNumber = 0;
+    episodeItr = 0;
 }
 void CopsScene::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
@@ -101,6 +105,43 @@ void CopsScene::keyPressEvent(QKeyEvent *event)
     {
         monteCarlo.loadClusters();
     }
+    if (event->key() == 'G')    // Learn in Background!
+    {
+        for (int i = 0; i < 10000; i++)
+        {
+            episode = this->monteCarlo.episodeGenerator(100);
+            monteCarlo.clustring(*episode);
+            monteCarlo.updateClusters(*episode);
+            if (saveEpisode)
+            {
+                monteCarlo.saveEpisode(episode);
+            }
+            cout << "Cluster Size: " << monteCarlo.getClusterList().size() << endl;
+            cout << "Episode Number: " << episodeNumber++ << endl;
+            episode->clear();
+            episode->reserve(100);
+        }
+        TRACE << "Learning Finished!" << endl;
+    }
+    if (event->key() == 'R')
+    {
+        cout << "Replay ..." << endl;
+        replay = true;
+    }
+    if (event->key() == 16777236) // forward
+    {
+        replayId += 1000;
+        replayId = replayId >= 9000 ? 9000 : replayId;
+        episodeItr = 0;
+        replayId -= replayId % 1000;
+    }
+    if (event->key() == 16777234)
+    {
+        replayId -= 1000;
+        replayId = replayId <= 0 ? 0 : replayId;
+        episodeItr = 0;
+        replayId -= replayId % 1000;
+    }
 }
 
 void CopsScene::episodeVisualizer(vector<EpisodeElement> *episode)
@@ -132,11 +173,10 @@ void CopsScene::addItem(QGraphicsItem *item)
 void CopsScene::timerEvent(QTimerEvent *)
 {
     static int clusterMe = 0;
-    static int episodeItr = 0;
     int reward = 1;
     bool action;
     float dy = 0;
-    if (!autoPilot)
+    if (!autoPilot && !replay)
     {
         QPointF currentPos = cops->pos();
         if (this->mouseState == CLICKED)
@@ -224,38 +264,60 @@ void CopsScene::timerEvent(QTimerEvent *)
             }
         }
     }
-    else        // Auto Pilot
+    else if (autoPilot && !replay)        // Auto Pilot
     {
         if (episodeItr % 100 == 0)
         {
-            episode = this->monteCarlo.episodeGenerator(100);
-            monteCarlo.clustring(*episode);
-            monteCarlo.updateClusters(*episode);
-            cout << "Cluster Size: " << monteCarlo.getClusterList().size() << endl;
             episode->clear();
+
             episode->reserve(100);
             episodeItr = 0;
+            episode = this->monteCarlo.episodeGenerator(100);
+            //      monteCarlo.clustring(*episode);
+            //    monteCarlo.updateClusters(*episode);
+            //      cout << "Cluster Size: " << monteCarlo.getClusterList().size() << endl;
+            //     cout << "Episode Number: " << episodeNumber++ << endl;
+
         }
 
         EpisodeElement ep = (*episode)[episodeItr];
-        cops->setPos(50, ep.getState()->getDistUp());
-        barrier->setPos(ep.getState()->getDistBarrier(), ep.getState()->getBarrierUp());
-//        QList<QGraphicsItem *> collidItems = this->collidingItems(barrier);
-//        foreach (QGraphicsItem *collideItem, collidItems)
-//        {
-//            if (collideItem->type() == HELICOPS)
-//            {
-//                cout << "Crashed!" << endl;
-//                reward = -100;
-//                killTimer(timerId);
-//                pause = false;
-//                TRACE << "Reward: " << ep.getReward() << endl;
-//                cout << "distUP: " << ep.getState()->getDistUp() << " distDown: " << ep.getState()->getDistDown() << endl;
-//                cout << "barrierUP: " << ep.getState()->getBarrierUp() << " barrierDown: " << ep.getState()->getBarrierDown() << endl;
+        State *state = ep.getState();
+        cops->setPos(50, state->getDistUp());
+        barrier->setPos(state->getDistBarrier(), state->getBarrierUp());
+        //        QList<QGraphicsItem *> collidItems = this->collidingItems(barrier);
+        //        foreach (QGraphicsItem *collideItem, collidItems)
+        //        {
+        //            if (collideItem->type() == HELICOPS)
+        //            {
+        //                cout << "Crashed!" << endl;
+        //                killTimer(timerId);
+        //                pause = false;
+        //                TRACE << ep.getQ() << endl;
+        ////                TRACE << "Reward: " << ep.getReward() << endl;
+        ////                cout << "distUP: " << ep.getState()->getDistUp() << " distDown: " << ep.getState()->getDistDown() << endl;
+        ////                cout << "barrierUP: " << ep.getState()->getBarrierUp() << " barrierDown: " << ep.getState()->getBarrierDown() << endl;
 
-//            }
-//        }
+        //            }
+        //        }
 
+        episodeItr++;
+    }
+    if (replay)
+    {
+        if (episodeItr % 100 == 0)
+        {
+            episode->clear();
+            episode->reserve(100);
+            episodeItr = 0;
+            episode = monteCarlo.loadEpisodeFromFile("./episodes/episode_", replayId);
+            TRACE << replayId << endl;
+            replayId++;
+        }
+
+        EpisodeElement ep = (*episode)[episodeItr];
+        State *state = ep.getState();
+        cops->setPos(50, state->getDistUp());
+        barrier->setPos(state->getDistBarrier(), state->getBarrierUp());
         episodeItr++;
     }
 }

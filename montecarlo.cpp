@@ -29,7 +29,7 @@ MonteCarlo::MonteCarlo()
     (*minState)(State::VY) = -550.0f;
 
     (*maxState) = (*maxState)-(*minState);
-    ignoreThreshold = 1;
+    ignoreThreshold = 1.7;
 
 
 
@@ -39,6 +39,8 @@ MonteCarlo::MonteCarlo()
     distBarrier = 550 ;
     barrierUp =168 ;
     barrierDown = 132;
+
+
 
 }
 
@@ -166,8 +168,23 @@ bool MonteCarlo::actionSelection(State *state, float *retQ)
         *retQ = max(clickQ, releasedQ);
     }
 
-    //    eps -= 0.001;
+    // option selection
+    //    if (clickQ < -100 && releasedQ < -100 && optionCount <= 0)
+    //    {
+    //        if (clickQ > releasedQ && !optionUp)
+    //        {
+    //            optionUp = true;
+    //            optionDown = false;
+    //        }
+    //        else if (!optionDown)
+    //        {
+    //            optionUp = false;
+    //            optionDown = true;
+    //        }
+    //        optionCount = 5;
+    //    }
 
+    eps = eps > 0 ? eps - 0.0001 : 0;
     if (clickQ == releasedQ)
     {
         rnd = rand() / float(RAND_MAX);
@@ -215,7 +232,7 @@ void MonteCarlo::clustring(vector<EpisodeElement> &episode)
         // no match cluster, create new cluster
         if (!isInAnyCluster && clusterList.size() < maxNumOfClusters)
         {
-//            TRACE << "new cluster created!" << endl;
+            //            TRACE << "new cluster created!" << endl;
             ColumnVector *newMu = new ColumnVector();
             newMu->resize(7);
             if (episodeItr->getAction() == true)
@@ -254,6 +271,33 @@ int MonteCarlo::saveEpisode(vector<EpisodeElement> *episode)
     saveFile.close();
     id++;
     return id;
+}
+
+vector<EpisodeElement>* MonteCarlo::loadEpisodeFromFile(char *prefix, int startId)
+{
+    static int id;
+    char fileName[20] = {0};
+    if (startId == -1)
+    {
+        sprintf(fileName, "%s%d.dat", prefix, id);
+    }else
+    {
+        sprintf(fileName, "%s%d.dat", prefix, startId);
+    }
+    ifstream loadFile(fileName);
+    vector<EpisodeElement> *retEpisode = new vector<EpisodeElement>();
+    bool action;
+    float reward;
+    float Q;
+    while (!loadFile.eof())
+    {
+        State *tmpState = new State();
+        loadFile >> *tmpState >> action >> reward;
+        EpisodeElement *episodeElement = new EpisodeElement(tmpState, action, reward, Q);
+        retEpisode->push_back(*episodeElement);
+    }
+    loadFile.close();
+    return retEpisode;
 }
 
 vector<EpisodeElement>* MonteCarlo::episodeGeneratorFromPlay(int episodeLen)
@@ -414,14 +458,14 @@ vector<EpisodeElement>* MonteCarlo::episodeGenerator(int episodeLen)
         {
             // check crash
             if ((distDown <= barrierDown + 70 && distDown >= barrierDown && !lastCrash)
-                        ||
-                (distUp >= barrierUp && distUp <= barrierUp + 70 && !lastCrash))
-            {
+                ||
+                        (distUp >= barrierUp && distUp <= barrierUp + 70 && !lastCrash))
+                {
                 reward = -200;
                 lastCrash = true;
-//                TRACE << "barrier crash!" << endl;
-//                TRACE << "distUP: " << distUp << "distDown: " << distDown << endl;
-//                TRACE << "barrierUP: " << barrierUp << "barrierDown: " << barrierDown << endl;
+                //                TRACE << "barrier crash!" << endl;
+                //                TRACE << "distUP: " << distUp << "distDown: " << distDown << endl;
+                //                TRACE << "barrierUP: " << barrierUp << "barrierDown: " << barrierDown << endl;
             }
         }
         if (distBarrier < -50)
@@ -452,6 +496,18 @@ vector<EpisodeElement>* MonteCarlo::episodeGenerator(int episodeLen)
 
         State *nextState = new State(vX, vY, distUp, distDown, distBarrier, barrierUp, barrierDown);
         action = actionSelection(nextState, &Q);
+        //        if (optionUp == true && optionCount > 0)
+        //        {
+        //            action = true;
+        //            optionCount--;
+        //            cout << "OptionUp..." << optionCount << endl;
+        //        }
+        //        if (optionDown == true && optionCount > 0)
+        //        {
+        //            action = false;
+        //            optionCount--;
+        //            cout << "OptionDown..." << optionCount << endl;
+        //        }
         EpisodeElement *newepisodeElement = new EpisodeElement(nextState, action, reward, Q);
         retEpisode->push_back(*newepisodeElement);
     }
