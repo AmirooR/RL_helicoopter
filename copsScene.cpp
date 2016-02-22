@@ -10,6 +10,7 @@
 #include <QPointF>
 #include <QKeyEvent>
 #include <string>
+#include <unistd.h>
 
 //#include <octave/oct.h>
 #include "ColumnVector.h"
