@@ -2,6 +2,7 @@
 #include "montecarlo.h"
 #include "util.h"
 #include <math.h>
+#include <stdlib.h>
 
 MonteCarlo::MonteCarlo()
     :maxNumOfClusters(600)

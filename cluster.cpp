@@ -1,6 +1,7 @@
 #include "cluster.h"
 #include "util.h"
 #include <math.h>
+#include <stdio.h>
 
 using namespace std;
 
@@ -28,7 +29,7 @@ Cluster::Cluster(ColumnVector *mu)
 }
 
 Cluster::Cluster(ColumnVector *mu, float sigma, float alpha, float sigmaDown, float alphaDown)
-{    
+{
     TRACE << mu->dim1() << endl;
     this->mu = mu;
     this->sigmaUp = sigma;
