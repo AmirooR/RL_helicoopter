@@ -1,5 +1,6 @@
 #include "cluster.h"
 #include "util.h"
+#include <math.h>
 
 using namespace std;
 
@@ -111,7 +112,7 @@ ColumnVector Cluster::distance(ColumnVector point)
     ColumnVector retColumn = point - *(this->mu);
     for (int i = 0; i < point.dim1(); i++)
     {
-        retColumn(i) = abs(retColumn(i));
+        retColumn(i) = fabs(retColumn(i));
     }
     return retColumn;
 }

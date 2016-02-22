@@ -1,7 +1,8 @@
 #ifndef STATE_H
 #define STATE_H
 
-#include <octave/oct.h>
+//#include <octave/oct.h>
+#include "ColumnVector.h"
 #include <ostream>
 
 using namespace std;

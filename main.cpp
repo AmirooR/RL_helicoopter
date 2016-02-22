@@ -5,8 +5,8 @@
 #include "cops.h"
 #include "copsScene.h"
 #include "barrier.h"
-
-
+#include <QApplication>
+#include <QGraphicsView>
 int main(int argc, char **argv)
 {
 	QApplication app(argc, argv);

@@ -1,4 +1,6 @@
+QT += widgets
 HEADERS += \
+    ColumnVector.h \
 	cops.h \
 	copsScene.h \
     barrier.h \
@@ -9,6 +11,7 @@ HEADERS += \
     util.h
 SOURCES +=	\
 	main.cpp \
+    ColumnVector.cpp \
 	cops.cpp \
 	copsScene.cpp \ 
     barrier.cpp \
@@ -18,10 +21,6 @@ SOURCES +=	\
     montecarlo.cpp
 
 RESOURCES += cops.qrc
-
-LIBS += -L/usr/lib64/octave-3.0.1/ -loctave 
-
-INCPATH += /usr/include/octave-3.0.1/
 
 # install
 target.path = $$[QT_INSTALL_EXAMPLES]/graphicsview/cops

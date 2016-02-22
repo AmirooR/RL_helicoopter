@@ -5,7 +5,8 @@
 #include "episodeelement.h"
 
 #include <vector>
-#include <octave/oct.h>
+//#include <octave/oct.h>
+#include "ColumnVector.h"
 
 using namespace std;
 

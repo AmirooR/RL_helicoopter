@@ -1,6 +1,7 @@
 #include <fstream>
 #include "montecarlo.h"
 #include "util.h"
+#include <math.h>
 
 MonteCarlo::MonteCarlo()
     :maxNumOfClusters(600)
@@ -237,12 +238,15 @@ void MonteCarlo::clustring(vector<EpisodeElement> &episode)
             newMu->resize(7);
             if (episodeItr->getAction() == true)
             {
-                *newMu = *stateColumnVector + newClusterTrUp / 2;
+                ColumnVector tt = newClusterTrUp /2;
+                *newMu = *stateColumnVector + tt;
                 // TRACE << "state " << stateColumnVector->transpose() << endl;
             }
             else
             {
-                *newMu = *stateColumnVector + newClusterTrDown / 2;
+                ColumnVector tt = newClusterTrDown/2;
+                ColumnVector ttt = *stateColumnVector + tt;
+                *newMu = ttt;//newClusterTrDown / 2;
                 // TRACE << "state " << stateColumnVector->transpose() << endl;
             }
             Cluster newCluster(newMu);
@@ -531,7 +535,7 @@ float* MonteCarlo::calcGrad(float fval,EpisodeElement e,int Returns,Cluster c)
     RowVector s_mu_transpose = s_mu.transpose();
 
     float sigma2 = e.getAction() ? c.getSigmaUp() : c.getSigmaDown(); //NOTE: sigma2 is stored in clusters!
-    sigma2 = abs(sigma2);
+    sigma2 = fabs(sigma2);
     float s_mu_sig = (s_mu_transpose * s_mu) / (2 * sigma2);
     float namaE = expf(-s_mu_sig);
     float delta = Returns - fval;
@@ -566,7 +570,10 @@ void MonteCarlo::updateClusters(vector<EpisodeElement> &episode)
         while(clusterItr != clusterList.end())
         {
             bool ignore = false;
-            ColumnVector vec = clusterItr->distance(e.getState()->toColumnVector()) - threshold * ignoreThreshold;
+            ColumnVector mvec = clusterItr->distance(e.getState()->toColumnVector());
+            ColumnVector igMe = threshold * ignoreThreshold;
+            ColumnVector vec = mvec - igMe;
+
             //            TRACE << "distance: " << clusterItr->distance(e.getState()->toColumnVector()).transpose() << endl;
             //            TRACE << "vec: " << vec.transpose() << endl;
             //            TRACE << "threshold: " << threshold.transpose() * ignoreThreshold << endl;
@@ -606,7 +613,9 @@ float MonteCarlo::computeQ(State *state, bool action)
     {
 
         bool ignore = false;
-        ColumnVector vec = clusterItr->distance(state->toColumnVector()) - threshold * ignoreThreshold;
+        ColumnVector mvec = clusterItr->distance(state->toColumnVector());
+        ColumnVector igMe = threshold * ignoreThreshold;
+        ColumnVector vec = mvec - igMe;
         for(int k=0;k<threshold.dim1();k++)
         {
             if(vec(k) >= 0)
@@ -623,7 +632,7 @@ float MonteCarlo::computeQ(State *state, bool action)
             s_mu = *temp;
             RowVector s_mu_transpose = s_mu.transpose();
             float sigma2 = action ? clusterItr->getSigmaUp() : clusterItr->getSigmaDown();
-            sigma2 = abs(sigma2);
+            sigma2 = fabs(sigma2);
             float s_mu_sig = (s_mu_transpose * s_mu)/(2*sigma2);
             float namaE = expf(-s_mu_sig);
             float alpha = action ? clusterItr->getAlphaUp() : clusterItr->getAlphaDown();

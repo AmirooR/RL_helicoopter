@@ -1,7 +1,8 @@
 #ifndef CLUSTER_H
 #define CLUSTER_H
 
-#include <octave/oct.h>
+//#include <octave/oct.h>
+#include "ColumnVector.h"
 
 class Cluster
 {

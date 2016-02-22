@@ -11,8 +11,8 @@
 #include <QKeyEvent>
 #include <string>
 
-#include <octave/oct.h>
-
+//#include <octave/oct.h>
+#include "ColumnVector.h"
 #include <iostream>
 
 using namespace std;
