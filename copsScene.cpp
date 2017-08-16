@@ -43,11 +43,21 @@ CopsScene::CopsScene()
     saveEpisode = false;
     autoPilot = false;
     replay = false;
-    clustersSaved = true; //NOTE: make it false for saving
+    clustersSaved = false; //NOTE: make it false for saving
     pause = false;
 
     episodeNumber = 0;
     episodeItr = 0;
+
+    cout<<"Reinforcement Learning Cops App"<<endl;
+    cout<<"\tPress\n"
+        <<"\t\t<space> to pause/resume\n"
+        <<"\t\t<S>     to save clusters\n"
+        <<"\t\t<P>     to switch to autpilot mode\n"
+        <<"\t\t<I>     to save episode\n"
+        <<"\t\t<L>     to load clusters\n"
+        <<"\t\t<G>     to start learning in background mode\n"
+        <<"\t\t<R>     to switch to replay mode (then use forward and backward to jump 1000 episodes forward or backward\n"<<endl;
 }
 void CopsScene::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {

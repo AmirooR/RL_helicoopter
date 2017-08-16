@@ -234,7 +234,7 @@ void MonteCarlo::clustring(vector<EpisodeElement> &episode)
         // no match cluster, create new cluster
         if (!isInAnyCluster && clusterList.size() < maxNumOfClusters)
         {
-            //            TRACE << "new cluster created!" << endl;
+            TRACE << "new cluster created!" << endl;
             ColumnVector *newMu = new ColumnVector();
             newMu->resize(7);
             if (episodeItr->getAction() == true)
@@ -265,7 +265,7 @@ int MonteCarlo::saveEpisode(vector<EpisodeElement> *episode)
 {
     static int id = 0;
     char fileName[20] = {0};
-    sprintf(fileName, "episode_%d.dat", id);
+    sprintf(fileName, "./episodes/episode_%d.dat", id);
     ofstream saveFile(fileName);
     vector<EpisodeElement>::iterator episodeItr = episode->begin();
     while(episodeItr != episode->end())
