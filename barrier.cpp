@@ -6,7 +6,7 @@ Barrier::Barrier(qreal x, qreal y, qreal width, qreal height):QGraphicsRectItem(
 
 void Barrier::timerEvent(QTimerEvent *t)
 {
-    QRectF r = rect();
+/*    QRectF r = rect();
     r.moveLeft(1);
-    this->setRect(r);
+    this->setRect(r);*/
 }

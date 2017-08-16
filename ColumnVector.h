@@ -45,6 +45,7 @@ class AVector
 
         AVector& operator=(AVector rhs)
         {
+            this->resize(rhs.dim1() );
             for(unsigned int i=0;i<data.size();i++)
                 data[i] = rhs(i);
             return *this;

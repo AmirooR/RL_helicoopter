@@ -114,6 +114,7 @@ ColumnVector Cluster::distance(ColumnVector point)
     for (int i = 0; i < point.dim1(); i++)
     {
         retColumn(i) = fabs(retColumn(i));
+        //TRACE << "["<<i<< "] point(i): " << point(i) << ", mu(i): " << (*(this->mu))(i) << ", diff: " << retColumn(i) << endl;
     }
     return retColumn;
 }
@@ -122,8 +123,10 @@ bool Cluster::isInCluster(ColumnVector &tr, ColumnVector &state)
 {
     ColumnVector dist = distance(state);
     // TRACE << "dist: " << dist.transpose() << " tr: " << tr.transpose() << endl;
+    //TRACE << "tr dim: "<<tr.dim1() << endl;
     for (int i = 0; i < tr.dim1(); i++)
     {
+        //TRACE << "["<<i<<"] "<<dist(i) << " > " << tr(i) << endl;
         if (dist(i) > tr(i))
         {
             return false;

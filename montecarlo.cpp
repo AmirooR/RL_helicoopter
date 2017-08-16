@@ -48,7 +48,11 @@ MonteCarlo::MonteCarlo()
 
 void MonteCarlo::setThreshold(ColumnVector tr)
 {
+
+    TRACE << "setThreshold: tr.dim1 "<< tr.dim1() << endl;
     this->threshold = tr;
+
+    TRACE << this->threshold.dim1() << endl;
 
 }
 
