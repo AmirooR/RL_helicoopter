@@ -1,6 +1,8 @@
 # Reinforcement Learning in Helicopter Game
 This is a proof of concept RL implementation for a helicopter game. The helicopter learns to avoid obstacles by learning a reward function based on Radial Basis Clustering.
 
+![Demo](https://github.com/AmirooR/RL_helicoopter/blob/master/COPS.gif)
+
 ## Compile
 You should have qt4 or qt5 and a c++ compiler. Type the following commands in shell:
 
